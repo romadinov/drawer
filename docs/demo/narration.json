@@ -1,0 +1,11 @@
+[
+  {"id": "s01_intro", "text": "This is Drawer, an architecture diagram tool for the Mac and the iPad. Every diagram is both a PlantUML or Mermaid spec and a drawing. Change either one, and the other follows."},
+  {"id": "s02_type", "text": "A new diagram starts with its type: C4, UML class, entity relationship, sequence, or flowchart. Let's sketch a C4 container diagram."},
+  {"id": "s03_draw", "text": "Just draw. Sketch a box, and Drawer recognises the shape. Because a box could be several things, it asks what this one is."},
+  {"id": "s04_name", "text": "Pick software system, and give it a name. That's a real element now, not a picture."},
+  {"id": "s05_more", "text": "Draw a second box for the database, and choose container database."},
+  {"id": "s06_connect", "text": "A line between two elements becomes a relationship. And a circle, a diamond, or even a stick figure, turns into the matching element."},
+  {"id": "s07_spec", "text": "Open the spec, and there's everything you drew, written as PlantUML. Type here instead, and completion suggests keywords, element names and arrows. The drawing updates as you type."},
+  {"id": "s08_tidy", "text": "The palette adds elements by type, and auto layout tidies everything up. Exports to PNG and SVG keep the editable diagram inside, so you can open the image and carry on."},
+  {"id": "s09_outro", "text": "On the Mac you also get voice commands, copy and paste, and a full inspector. Drawer. Sketch it, or write it. It stays in sync."}
+]
