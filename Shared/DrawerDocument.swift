@@ -10,9 +10,18 @@ extension UTType {
 
 enum SelectionOrigin { case canvas, editor }
 
+struct DrawerSnapshot: Sendable {
+    var state: DrawingState
+    /// Pre-rendered file contents when saving as PNG or SVG.
+    var image: Data?
+}
+
 @Observable
 final class DrawerDocument: Document {
-    static let readableContentTypes: [UTType] = [.drawerDiagram]
+    /// PNG and SVG files open when they carry an embedded diagram (exported by Drawer), and save back
+    /// into the same format, so a `diagram.png` in a README stays editable.
+    static let readableContentTypes: [UTType] = [.drawerDiagram, .png, .svg]
+    static let writableContentTypes: [UTType] = [.drawerDiagram, .png, .svg]
 
     private(set) var state: DrawingState
     private(set) var parsed: ParsedDiagram = .empty
@@ -23,6 +32,8 @@ final class DrawerDocument: Document {
     var selectionOrigin: SelectionOrigin = .canvas
     /// Set when a node should immediately get an inline title editor (after creation from the palette).
     var pendingInlineEdit: ElementRef?
+    /// Recognised elements whose kind was a guess; the UI asks about them one at a time, newest first.
+    var pendingChoices: [InkCommit.Choice] = []
 
     @ObservationIgnored var undoManager: UndoManager?
     @ObservationIgnored private var typingBase: DrawingState?
@@ -37,32 +48,41 @@ final class DrawerDocument: Document {
 
     // MARK: Document
 
-    func reader(configuration: sending ReadConfiguration) -> sending FileWrapperDocumentReader<DrawingState> {
+    func reader(configuration: sending ReadConfiguration) -> sending FileWrapperDocumentReader<DrawerSnapshot> {
         FileWrapperDocumentReader(configuration) { fileWrapper in
             guard let data = fileWrapper.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }
-            return try JSONDecoder().decode(DrawingState.self, from: data)
+            if let state = EmbeddedDiagram.decode(data) { return DrawerSnapshot(state: state) }
+            if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) || String(data: data.prefix(512), encoding: .utf8)?.contains("<svg") == true {
+                throw CocoaError(.fileReadCorruptFile, userInfo: [
+                    NSLocalizedDescriptionKey: "This image doesn’t contain a Drawer diagram.",
+                    NSLocalizedRecoverySuggestionErrorKey: "Only PNG and SVG files exported from Drawer can be opened and edited.",
+                ])
+            }
+            return DrawerSnapshot(state: try JSONDecoder().decode(DrawingState.self, from: data))
         }
     }
 
     @MainActor
-    func apply(snapshot: sending DrawingState, previous: sending DrawingState?) async throws {
-        var s = snapshot
+    func apply(snapshot: sending DrawerSnapshot, previous: sending DrawerSnapshot?) async throws {
+        var s = snapshot.state
         parsed = Engine.reconcile(&s, measure: appMeasurer)
         state = s
         revision += 1
     }
 
-    func writer(configuration: sending WriteConfiguration) -> sending FileWrapperDocumentWriter<DrawingState> {
+    func writer(configuration: sending WriteConfiguration) -> sending FileWrapperDocumentWriter<DrawerSnapshot> {
         FileWrapperDocumentWriter(configuration) { snapshot, _ in
+            if let image = snapshot.image { return FileWrapper(regularFileWithContents: image) }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            return FileWrapper(regularFileWithContents: try encoder.encode(snapshot))
+            return FileWrapper(regularFileWithContents: try encoder.encode(snapshot.state))
         }
     }
 
     @MainActor
-    func snapshot(contentType: UTType) async throws -> sending DrawingState {
-        state
+    func snapshot(contentType: UTType) async throws -> sending DrawerSnapshot {
+        // Images have to be drawn on the main actor (AppKit/UIKit text drawing); plain diagrams are just encoded later.
+        DrawerSnapshot(state: state, image: DiagramExport.fileContents(state, as: contentType))
     }
 
     // MARK: Changes (all undoable)
@@ -203,7 +223,38 @@ final class DrawerDocument: Document {
     @MainActor
     func applyInk(_ items: [InkItem]) {
         guard !items.isEmpty else { return }
-        change("Draw") { state, _ in InkCommit.apply(items, to: &state, measure: appMeasurer) }
+        var result = InkCommit.Result()
+        change("Draw") { state, _ in result = InkCommit.apply(items, to: &state, measure: appMeasurer) }
+        pendingChoices = result.choices + pendingChoices
+        if let c = currentChoice {
+            selection = [.node(c.id)]
+            selectionOrigin = .canvas
+        }
+    }
+
+    /// The recognised element currently being asked about.
+    var currentChoice: InkCommit.Choice? { pendingChoices.first { parsed.node($0.id) != nil } }
+
+    /// Answers the current question: makes the element `kind` (it already is the first option).
+    @MainActor
+    func resolveChoice(_ kind: NodeKind) {
+        guard let c = currentChoice else { return }
+        pendingChoices.removeAll { $0.id == c.id }
+        if parsed.node(c.id)?.kind != kind { updateNode(c.id, NodeEdit(kind: kind)) }
+        if let next = currentChoice { selection = [.node(next.id)] }
+    }
+
+    /// Keeps the guess and stops asking about everything recognised so far.
+    @MainActor
+    func dismissChoices() { pendingChoices = [] }
+
+    /// Pastes a diagram copied from Drawer, or embedded in a PNG/SVG.
+    @MainActor
+    func paste(_ diagram: DrawingState) {
+        var pasted = Set<ElementRef>()
+        change("Paste") { state, _ in pasted = DiagramClipboard.paste(diagram, into: &state, measure: appMeasurer) }
+        selection = pasted
+        selectionOrigin = .canvas
     }
 
     @MainActor

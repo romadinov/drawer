@@ -677,7 +677,27 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
 
     @objc override func selectAll(_ sender: Any?) {
         guard let doc = document else { return }
-        select(Set(doc.parsed.nodes.filter { !$0.kind.isGroup }.map { ElementRef.node($0.id) } + doc.state.decorations.map { .decoration($0.id) }))
+        select(Set(doc.parsed.nodes.map { ElementRef.node($0.id) } + doc.parsed.edges.map { .edge($0.id) } + doc.state.decorations.map { .decoration($0.id) }))
+    }
+
+    /// ⌘C: the selection (or the whole diagram) as an image for other apps, and as a diagram for Drawer.
+    @objc func copy(_ sender: Any?) {
+        guard let doc = document else { return }
+        Exporter.copy(doc)
+    }
+
+    @objc func cut(_ sender: Any?) {
+        guard let doc = document, !doc.selection.isEmpty else { return }
+        Exporter.copy(doc)
+        doc.deleteSelection()
+    }
+
+    /// ⌘V: a diagram copied from Drawer, or a PNG/SVG exported by Drawer, becomes editable elements.
+    @objc func paste(_ sender: Any?) {
+        guard let doc = document else { return }
+        guard let diagram = Exporter.pastedDiagram() else { NSSound.beep(); return }
+        doc.paste(diagram)
+        if doc.parsed.nodes.count == SpecParser.parse(diagram.spec, language: diagram.language).nodes.count { zoomToFit() }
     }
 
     @objc func delete(_ sender: Any?) { document?.deleteSelection() }
@@ -700,6 +720,21 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
             switch r {
             case let .node(id):
                 menu.addItem(item("Rename", #selector(menuRename(_:))))
+                if let node = doc.parsed.node(id) {
+                    let kinds = NodeKind.alternatives(to: node.kind, family: doc.parsed.family, language: doc.state.language)
+                    if kinds.count > 1 {
+                        let change = NSMenuItem(title: "Change Type", action: nil, keyEquivalent: "")
+                        let sub = NSMenu()
+                        for k in kinds {
+                            let i = item(k.displayName, #selector(menuChangeKind(_:)))
+                            i.representedObject = k.rawValue
+                            i.state = k == node.kind ? .on : .off
+                            sub.addItem(i)
+                        }
+                        change.submenu = sub
+                        menu.addItem(change)
+                    }
+                }
                 if doc.state.layout[id]?.size != nil { menu.addItem(item("Reset Size", #selector(menuResetSize(_:)))) }
             case .edge:
                 menu.addItem(item("Edit Label", #selector(menuRename(_:))))
@@ -737,6 +772,12 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
 
     @objc private func menuRename(_ sender: Any?) { if let r = document?.selection.first { beginInlineEdit(r) } }
     @objc private func menuFit(_ sender: Any?) { zoomToFit() }
+    @objc private func menuChangeKind(_ sender: NSMenuItem) {
+        guard let doc = document, let raw = sender.representedObject as? String, let kind = NodeKind(rawValue: raw),
+              case let .node(id)? = doc.selection.first else { return }
+        doc.pendingChoices.removeAll { $0.id == id }
+        doc.updateNode(id, NodeEdit(kind: kind))
+    }
     @objc private func menuResetSize(_ sender: Any?) {
         guard let doc = document else { return }
         let ids = doc.selection.compactMap { if case let .node(id) = $0 { id } else { nil } }

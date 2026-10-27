@@ -50,3 +50,4 @@ targets:
         INFOPLIST_FILE: Mobile/Info.plist
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: SZVSSCJQFN

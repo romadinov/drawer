@@ -204,4 +204,25 @@ extension Pen {
         #expect(b.family == .c4 && b.nodes.map(\.kind) == [.person], "\(blank.spec)")
         #expect(b.diagnostics.isEmpty)
     }
+
+    @Test func ambiguousShapesOfferChoices() {
+        var state = DrawingState(language: .mermaid, spec: "C4Context\n  System(s, \"Shop\")\n")
+        let result = InkCommit.apply([
+            .shape(.rectangle, Rect(x: 400, y: 300, width: 160, height: 80)),
+            .text("Billing", bounds: Rect(x: 440, y: 330, width: 60, height: 20), strokes: []),
+        ], to: &state)
+        #expect(result.choices.count == 1)
+        #expect(result.choices.first?.options.prefix(2) == [.container, .system])
+        // Picking another option rewrites the declaration in place.
+        let id = result.choices[0].id
+        Engine.updateNode(&state, id: id, NodeEdit(kind: .system))
+        let after = SpecParser.parse(state.spec, language: .mermaid)
+        #expect(after.node(id)?.kind == .system, "\(state.spec)")
+        #expect(after.node(id)?.title == "Billing")
+        #expect(after.diagnostics.isEmpty)
+
+        // Unambiguous shapes don't ask.
+        var er = DrawingState(language: .mermaid, spec: "erDiagram\n  A {\n    int id\n  }\n")
+        #expect(InkCommit.apply([.shape(.rectangle, Rect(x: 400, y: 300, width: 160, height: 80))], to: &er).choices.isEmpty)
+    }
 }

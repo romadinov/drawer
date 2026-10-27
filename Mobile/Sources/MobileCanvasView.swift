@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import DrawerCore
 
-enum MobileTool: Hashable { case select, draw }
+enum MobileTool: Hashable { case select, draw, erase }
 
 /// Lets SwiftUI ask the canvas for things only it knows (visible area) or to do things (fit).
 @MainActor
@@ -19,6 +19,7 @@ struct MobileCanvas: UIViewRepresentable {
     var tool: MobileTool
     var handle: CanvasHandle
     var onEdit: (ElementRef) -> Void
+    var onToolChange: (MobileTool) -> Void = { _ in }
 
     func makeUIView(context: Context) -> CanvasUIView {
         let v = CanvasUIView()
@@ -32,26 +33,41 @@ struct MobileCanvas: UIViewRepresentable {
         v.ink.document = document
         v.tool = tool
         v.onEdit = onEdit
+        v.onToolChange = onToolChange
         handle.view = v
         v.setNeedsDisplay()
     }
 }
 
 /// Finger: tap to select, drag to move (or pan on empty space), two fingers to pan and pinch to zoom.
-/// Apple Pencil always draws; in Draw mode a finger draws too.
-final class CanvasUIView: UIView, UIGestureRecognizerDelegate {
+/// Apple Pencil draws (or erases in Erase mode). A finger draws in Draw mode only until the Pencil is used,
+/// or never if "Only Draw with Apple Pencil" is on, so a resting palm can't scribble.
+final class CanvasUIView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
     weak var document: DrawerDocument?
     let ink = InkSession()
     var tool: MobileTool = .select {
         didSet {
             guard tool != oldValue else { return }
+            previousTool = oldValue
             if oldValue == .draw { ink.commit() }
-            oneFinger.isEnabled = tool == .select
-            tap.isEnabled = tool == .select
-            doubleTap.isEnabled = tool == .select
+            updateGestures()
         }
     }
     var onEdit: (ElementRef) -> Void = { _ in }
+    var onToolChange: (MobileTool) -> Void = { _ in }
+    private var previousTool: MobileTool = .select
+    private var sawPencil = false { didSet { if sawPencil != oldValue { updateGestures() } } }
+    /// Fingers never draw or erase once a Pencil is in use.
+    private var pencilOnly: Bool { sawPencil || UIPencilInteraction.prefersPencilOnlyDrawing }
+    private var erasing: Set<ElementRef> = []
+    private var eraserAt: CGPoint?
+
+    private func updateGestures() {
+        let fingersSelect = tool == .select || pencilOnly
+        oneFinger.isEnabled = fingersSelect
+        tap.isEnabled = fingersSelect
+        doubleTap.isEnabled = fingersSelect
+    }
 
     private var zoom: CGFloat = 1
     private var pan = CGPoint(x: 24, y: 24)
@@ -80,6 +96,18 @@ final class CanvasUIView: UIView, UIGestureRecognizerDelegate {
             g.allowedTouchTypes = fingers
             g.delegate = self
             addGestureRecognizer(g)
+        }
+        let pencil = UIPencilInteraction()
+        pencil.delegate = self
+        addInteraction(pencil)
+    }
+
+    /// Pencil double-tap follows the system setting: switch to the eraser, or back to the previous tool.
+    func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveTap tap: UIPencilInteraction.Tap) {
+        switch UIPencilInteraction.preferredTapAction {
+        case .switchEraser: onToolChange(tool == .erase ? .draw : .erase)
+        case .switchPrevious: onToolChange(previousTool == tool ? .select : previousTool)
+        default: break
         }
     }
     required init?(coder: NSCoder) { fatalError() }
@@ -125,8 +153,13 @@ final class CanvasUIView: UIView, UIGestureRecognizerDelegate {
         ctx.saveGState()
         ctx.translateBy(x: pan.x, y: pan.y)
         ctx.scaleBy(x: zoom, y: zoom)
-        DiagramRenderer(parsed: doc.parsed, state: previewState(doc), selection: doc.selection).draw()
+        DiagramRenderer(parsed: doc.parsed, state: previewState(doc), selection: erasing.isEmpty ? doc.selection : erasing).draw()
         if !ink.isEmpty { DiagramRenderer.strokeInk(ink.pending, color: NodePalette.selection, width: 2.2) }
+        if let e = eraserAt {
+            let r: CGFloat = 12 / zoom
+            UIColor.systemRed.withAlphaComponent(0.25).setFill()
+            UIBezierPath(ovalIn: CGRect(x: e.x - r, y: e.y - r, width: 2 * r, height: 2 * r)).fill()
+        }
         ctx.restoreGState()
         if doc.parsed.nodes.isEmpty && doc.state.decorations.isEmpty && ink.isEmpty {
             DiagramRenderer.drawText("Draw boxes, circles, diamonds and arrows with Apple Pencil (or a finger in Draw mode), and write names inside them.\nThey become diagram elements when you pause.",
@@ -138,35 +171,72 @@ final class CanvasUIView: UIView, UIGestureRecognizerDelegate {
     // MARK: Ink (raw touches; gestures only see fingers)
 
     private func drawsInk(_ touch: UITouch) -> Bool {
-        touch.type == .pencil || (tool == .draw && touch.type == .direct)
+        touch.type == .pencil || (tool != .select && touch.type == .direct && !pencilOnly)
     }
 
+    private var isErasing: Bool { tool == .erase }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if touches.contains(where: { $0.type == .pencil }) { sawPencil = true }
         if inkTouch != nil, inkTouch?.type == .direct, touches.contains(where: { $0.type == .direct }) {
             // A second finger: this is a pan/pinch, not writing.
-            ink.abandonStroke(); inkTouch = nil
+            if isErasing { erasing = []; eraserAt = nil; setNeedsDisplay() } else { ink.abandonStroke() }
+            inkTouch = nil
             return
         }
         guard inkTouch == nil, let t = touches.first(where: drawsInk) else { return }
         inkTouch = t
-        ink.begin(at: toDiagram(t.location(in: self)).point)
+        let p = toDiagram(t.location(in: self))
+        if isErasing { erase(at: p) } else { ink.begin(at: p.point) }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let t = inkTouch, touches.contains(t) else { return }
-        for c in event?.coalescedTouches(for: t) ?? [t] { ink.add(toDiagram(c.location(in: self)).point) }
+        for c in event?.coalescedTouches(for: t) ?? [t] {
+            let p = toDiagram(c.location(in: self))
+            if isErasing { erase(at: p) } else { ink.add(p.point) }
+        }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let t = inkTouch, touches.contains(t) else { return }
         inkTouch = nil
-        ink.end()
+        if isErasing { finishErasing() } else { ink.end() }
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let t = inkTouch, touches.contains(t) else { return }
         inkTouch = nil
-        ink.abandonStroke()
+        if isErasing { erasing = []; eraserAt = nil; setNeedsDisplay() } else { ink.abandonStroke() }
+    }
+
+    // MARK: Eraser
+
+    private func erase(at p: CGPoint) {
+        guard let doc = document else { return }
+        eraserAt = p
+        ink.erase(near: p.point, radius: 12 / zoom)
+        if let ref = hit(p, doc: doc) {
+            // Scrubbing across a group's empty interior shouldn't take the whole group with it.
+            if case let .node(id) = ref, doc.parsed.node(id)?.kind.isGroup == true,
+               let f = DiagramGeometry(parsed: doc.parsed, state: doc.state, measure: appMeasurer).frames[id],
+               CGRect(f).insetBy(dx: 14 / zoom, dy: 14 / zoom).contains(p) {
+            } else {
+                erasing.insert(ref)
+            }
+        }
+        setNeedsDisplay()
+    }
+
+    private func finishErasing() {
+        let refs = erasing
+        erasing = []
+        eraserAt = nil
+        if let doc = document, !refs.isEmpty {
+            doc.selection = refs
+            doc.deleteSelection()
+        }
+        setNeedsDisplay()
     }
 
     // MARK: Gestures

@@ -288,6 +288,15 @@ public enum NodeKind: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// Kinds an existing element can be switched to while staying valid in its diagram.
+    public static func alternatives(to kind: NodeKind, family: DiagramFamily, language: SpecLanguage) -> [NodeKind] {
+        if kind.isGroup || kind == .entity { return [kind] }
+        if kind.isClassifier { return [.classType, .abstractClass, .interfaceType, .enumType] }
+        if kind.isC4 { return allCases.filter(\.isC4) }
+        let palette = family == .sequence ? Self.palette(for: .sequence, language: language) : Self.palette(for: .flowchart, language: language)
+        return palette.contains(kind) ? palette : palette + [kind]
+    }
+
     /// Kinds offered in the "add" palette for a family.
     public static func palette(for family: DiagramFamily, language: SpecLanguage) -> [NodeKind] {
         switch family {

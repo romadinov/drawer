@@ -22,6 +22,8 @@ struct ContentView: View {
                        tool: $tool, zoom: $zoom, undoManager: undoManager, fitRequest: fitRequest)
                 .frame(minWidth: 400)
                 .overlay(alignment: .bottomTrailing) { zoomControls.padding(10) }
+                .overlay(alignment: .bottom) { ChoiceBar(document: document).padding(.trailing, 90) }
+                .animation(.snappy, value: document.currentChoice)
             if showInspector {
                 InspectorView(document: document)
                     .frame(minWidth: 230, idealWidth: 260, maxWidth: 360)
@@ -186,10 +188,11 @@ struct ContentView: View {
             Button { showTemplates = true } label: { Label("Templates", systemImage: "square.grid.2x2") }
                 .help("Start from a template")
             Menu {
-                Button("Export PNG…") { Exporter.exportImage(document, format: .png) }
+                Button("Export PNG (editable)…") { Exporter.exportImage(document, format: .png) }
+                Button("Export SVG (editable)…") { Exporter.exportImage(document, format: .svg) }
                 Button("Export PDF…") { Exporter.exportImage(document, format: .pdf) }
                 Divider()
-                Button("Copy as PNG") { Exporter.copyPNG(document) }
+                Button("Copy Diagram as Image") { Exporter.copyPNG(document) }
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
             }

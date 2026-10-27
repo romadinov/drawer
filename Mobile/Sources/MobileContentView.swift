@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import DrawerCore
 
 struct MobileContentView: View {
@@ -23,7 +24,7 @@ struct MobileContentView: View {
                 Divider()
             }
             MobileCanvas(document: document, revision: document.revision, selection: document.selection,
-                         tool: tool, handle: handle) { beginEdit($0) }
+                         tool: tool, handle: handle, onEdit: { beginEdit($0) }, onToolChange: { tool = $0 })
                 .ignoresSafeArea(edges: .bottom)
         }
         .toolbar { toolbar }
@@ -78,10 +79,11 @@ struct MobileContentView: View {
             Picker("Tool", selection: $tool) {
                 Label("Select", systemImage: "hand.point.up.left").tag(MobileTool.select)
                 Label("Draw", systemImage: "pencil.and.outline").tag(MobileTool.draw)
+                Label("Erase", systemImage: "eraser").tag(MobileTool.erase)
             }
             .pickerStyle(.segmented)
             .labelStyle(.iconOnly)
-            .frame(width: 120)
+            .frame(width: 170)
         }
         ToolbarItemGroup(placement: .topBarTrailing) {
             Menu {
@@ -111,13 +113,29 @@ struct MobileContentView: View {
                     }
                 }
                 Divider()
-                Button { if let url = MobileExporter.pngURL(document) { shareURL = ShareItem(url: url) } } label: {
-                    Label("Share as PNG", systemImage: "square.and.arrow.up")
-                }
+                Button { MobileExporter.copy(document) } label: { Label("Copy as Image", systemImage: "doc.on.doc") }
+                Button { paste() } label: { Label("Paste Diagram", systemImage: "doc.on.clipboard") }
+                Button {
+                    document.selection = Set(document.parsed.nodes.map { .node($0.id) } + document.parsed.edges.map { .edge($0.id) }
+                                             + document.state.decorations.map { .decoration($0.id) })
+                } label: { Label("Select All", systemImage: "checkmark.circle") }
+                Divider()
+                Button { share(.png) } label: { Label("Share PNG (editable)", systemImage: "photo") }
+                Button { share(.svg) } label: { Label("Share SVG (editable)", systemImage: "square.and.arrow.up") }
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
             }
         }
+    }
+
+    private func share(_ type: UTType) {
+        if let url = MobileExporter.fileURL(document, type: type) { shareURL = ShareItem(url: url) }
+    }
+
+    private func paste() {
+        guard let diagram = MobileExporter.pastedDiagram() else { return }
+        document.paste(diagram)
+        fitSoon()
     }
 
     private func addDecoration(_ kind: Decoration.Kind, text: String) {
@@ -133,11 +151,21 @@ struct MobileContentView: View {
 
     @ViewBuilder
     private var selectionBar: some View {
+        VStack(spacing: 0) {
+            ChoiceBar(document: document)
+            if document.currentChoice == nil { plainSelectionBar }
+        }
+        .animation(.snappy, value: document.currentChoice)
+    }
+
+    @ViewBuilder
+    private var plainSelectionBar: some View {
         if !document.selection.isEmpty {
             HStack(spacing: 16) {
                 Text(selectionTitle).font(.callout.weight(.medium)).lineLimit(1)
                 Spacer()
                 if document.selection.count == 1, let ref = document.selection.first {
+                    if case let .node(id) = ref { KindMenu(document: document, id: id) }
                     Button("Rename") { beginEdit(ref) }
                 }
                 Button(role: .destructive) { document.deleteSelection() } label: { Image(systemName: "trash") }
@@ -270,20 +298,28 @@ struct ActivityView: UIViewControllerRepresentable {
 
 @MainActor
 enum MobileExporter {
-    static func pngURL(_ doc: DrawerDocument) -> URL? {
-        guard let b = DiagramGeometry(parsed: doc.parsed, state: doc.state, measure: appMeasurer).bounds else { return nil }
-        let rect = CGRect(b).insetBy(dx: -30, dy: -30).integral
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 2
-        let data = UIGraphicsImageRenderer(size: rect.size, format: format).pngData { ctx in
-            UIColor.white.setFill()
-            ctx.fill(CGRect(origin: .zero, size: rect.size))
-            ctx.cgContext.translateBy(x: -rect.minX, y: -rect.minY)
-            UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-                DiagramRenderer(parsed: doc.parsed, state: doc.state).draw()
-            }
-        }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent((doc.parsed.title ?? "Diagram") + ".png")
+    /// A temporary PNG/SVG file with the editable diagram embedded, for the share sheet.
+    static func fileURL(_ doc: DrawerDocument, type: UTType) -> URL? {
+        guard let data = DiagramExport.fileContents(doc.state, as: type) else { return nil }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent((doc.parsed.title ?? "Diagram") + "." + (type.preferredFilenameExtension ?? "png"))
         return (try? data.write(to: url)) != nil ? url : nil
+    }
+
+    /// The selection (or whole diagram) as an image other apps can paste, plus the diagram itself for Drawer.
+    static func copy(_ doc: DrawerDocument) {
+        let part = DiagramClipboard.subset(doc.state, parsed: doc.parsed, selection: doc.selection)
+        var item: [String: Any] = [UTType.drawerDiagram.identifier: EmbeddedDiagram.json(part)]
+        if let png = DiagramExport.png(part) { item[UTType.png.identifier] = png }
+        if let svg = DiagramExport.svg(part) { item[UTType.svg.identifier] = svg }
+        UIPasteboard.general.setItems([item])
+    }
+
+    static func pastedDiagram() -> DrawingState? {
+        let pb = UIPasteboard.general
+        for type in [UTType.drawerDiagram, .png, .svg] {
+            if let data = pb.data(forPasteboardType: type.identifier), let state = EmbeddedDiagram.decode(data) { return state }
+        }
+        return nil
     }
 }

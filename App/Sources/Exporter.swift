@@ -4,43 +4,13 @@ import DrawerCore
 
 @MainActor
 enum Exporter {
-    enum Format { case png, pdf }
+    enum Format { case png, svg, pdf }
 
-    private static func contentRect(_ doc: DrawerDocument) -> CGRect? {
-        let g = DiagramGeometry(parsed: doc.parsed, state: doc.state, measure: appMeasurer)
-        return g.bounds.map { CGRect($0).insetBy(dx: -30, dy: -30).integral }
-    }
+    static func pngData(_ doc: DrawerDocument) -> Data? { DiagramExport.png(doc.state) }
+    static func pdfData(_ doc: DrawerDocument) -> Data? { pdfData(doc.state) }
 
-    private static func render(_ doc: DrawerDocument, in rect: CGRect) {
-        NSAppearance(named: .aqua)!.performAsCurrentDrawingAppearance {
-            NSColor.white.setFill()
-            CGRect(origin: .zero, size: rect.size).fill()
-            let t = NSAffineTransform()
-            t.translateX(by: -rect.minX, yBy: -rect.minY)
-            t.concat()
-            DiagramRenderer(parsed: doc.parsed, state: doc.state).draw()
-        }
-    }
-
-    static func pngData(_ doc: DrawerDocument, scale: CGFloat = 2) -> Data? {
-        guard let rect = contentRect(doc) else { return nil }
-        let w = Int(rect.width * scale), h = Int(rect.height * scale)
-        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: w, pixelsHigh: h, bitsPerSample: 8, samplesPerPixel: 4,
-                                         hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
-              let ctx = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
-        rep.size = rect.size
-        NSGraphicsContext.saveGraphicsState()
-        let flipped = NSGraphicsContext(cgContext: ctx.cgContext, flipped: true)
-        NSGraphicsContext.current = flipped
-        ctx.cgContext.translateBy(x: 0, y: CGFloat(h))
-        ctx.cgContext.scaleBy(x: scale, y: -scale)
-        render(doc, in: rect)
-        NSGraphicsContext.restoreGraphicsState()
-        return rep.representation(using: .png, properties: [:])
-    }
-
-    static func pdfData(_ doc: DrawerDocument) -> Data? {
-        guard let rect = contentRect(doc) else { return nil }
+    static func pdfData(_ state: DrawingState) -> Data? {
+        guard let (s, parsed, rect) = DiagramExport.prepared(state) else { return nil }
         let data = NSMutableData()
         var box = CGRect(origin: .zero, size: rect.size)
         guard let consumer = CGDataConsumer(data: data as CFMutableData),
@@ -50,7 +20,12 @@ enum Exporter {
         NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: true)
         ctx.translateBy(x: 0, y: rect.height)
         ctx.scaleBy(x: 1, y: -1)
-        render(doc, in: rect)
+        ctx.translateBy(x: -rect.minX, y: -rect.minY)
+        DiagramExport.inLightAppearance {
+            NSColor.white.setFill()
+            rect.fill()
+            DiagramRenderer(parsed: parsed, state: s).draw()
+        }
         NSGraphicsContext.restoreGraphicsState()
         ctx.endPDFPage()
         ctx.closePDF()
@@ -59,17 +34,42 @@ enum Exporter {
 
     static func exportImage(_ doc: DrawerDocument, format: Format) {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [format == .png ? .png : .pdf]
-        panel.nameFieldStringValue = "diagram." + (format == .png ? "png" : "pdf")
+        let type: UTType = switch format { case .png: .png; case .svg: .svg; case .pdf: .pdf }
+        panel.allowedContentTypes = [type]
+        panel.nameFieldStringValue = (doc.parsed.title ?? "Diagram") + "." + (type.preferredFilenameExtension ?? "png")
+        if format != .pdf {
+            panel.message = "The image keeps the editable diagram inside — open it in Drawer to keep editing."
+        }
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        let data = format == .png ? pngData(doc) : pdfData(doc)
+        let data = switch format { case .png: DiagramExport.png(doc.state); case .svg: DiagramExport.svg(doc.state); case .pdf: pdfData(doc.state) }
         try? data?.write(to: url)
     }
 
-    static func copyPNG(_ doc: DrawerDocument) {
-        guard let data = pngData(doc) else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setData(data, forType: .png)
+    static let diagramPasteboardType = NSPasteboard.PasteboardType(UTType.drawerDiagram.identifier)
+
+    /// Copies the selection (or the whole diagram) as an image other apps can paste — PNG, SVG and PDF —
+    /// plus the diagram itself, so pasting into Drawer brings back editable elements.
+    static func copy(_ doc: DrawerDocument, selection: Set<ElementRef>? = nil) {
+        let part = DiagramClipboard.subset(doc.state, parsed: doc.parsed, selection: selection ?? doc.selection)
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setData(EmbeddedDiagram.json(part), forType: diagramPasteboardType)
+        if let png = DiagramExport.png(part) { pb.setData(png, forType: .png) }
+        if let svg = DiagramExport.svg(part) { pb.setData(svg, forType: NSPasteboard.PasteboardType(UTType.svg.identifier)) }
+        if let pdf = pdfData(part) { pb.setData(pdf, forType: .pdf) }
+    }
+
+    static func copyPNG(_ doc: DrawerDocument) { copy(doc, selection: []) }
+
+    /// A diagram on the pasteboard: copied from Drawer, or an image that has one embedded.
+    static func pastedDiagram() -> DrawingState? {
+        let pb = NSPasteboard.general
+        for type in [diagramPasteboardType, .png, NSPasteboard.PasteboardType(UTType.svg.identifier), .fileURL] {
+            guard var data = pb.data(forType: type) else { continue }
+            if type == .fileURL, let url = URL(dataRepresentation: data, relativeTo: nil), let contents = try? Data(contentsOf: url) { data = contents }
+            if let state = EmbeddedDiagram.decode(data) { return state }
+        }
+        return nil
     }
 }
 
@@ -78,9 +78,9 @@ enum HeadlessExport {
     static func run(input: String, output: String) -> Never {
         do {
             let data = try Data(contentsOf: URL(fileURLWithPath: input))
-            let state = try JSONDecoder().decode(DrawingState.self, from: data)
+            guard let state = EmbeddedDiagram.decode(data) else { throw CocoaError(.fileReadCorruptFile) }
             let doc = DrawerDocument(state: state)
-            let out = output.hasSuffix(".pdf") ? Exporter.pdfData(doc) : Exporter.pngData(doc)
+            let out = output.hasSuffix(".pdf") ? Exporter.pdfData(doc) : output.hasSuffix(".svg") ? DiagramExport.svg(state) : Exporter.pngData(doc)
             guard let out else { throw CocoaError(.fileWriteUnknown) }
             try out.write(to: URL(fileURLWithPath: output))
             for d in doc.parsed.diagnostics { FileHandle.standardError.write("line \(d.line): \(d.message)\n".data(using: .utf8)!) }

@@ -94,6 +94,13 @@ final class InkSession {
         }
     }
 
+    /// Removes pending strokes that pass within `radius` of `p` (eraser over not-yet-recognised ink).
+    func erase(near p: Point, radius: Double) {
+        let before = strokes.count
+        strokes.removeAll { s in s.points.contains { hypot($0.x - p.x, $0.y - p.y) <= radius } }
+        if strokes.count != before { onChange() }
+    }
+
     /// Drops the stroke in progress (e.g. it turned out to be the start of a two-finger pan).
     func abandonStroke() {
         current = nil

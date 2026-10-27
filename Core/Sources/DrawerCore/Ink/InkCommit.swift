@@ -9,32 +9,38 @@ public enum InkCommit {
         public var created: [ElementRef] = []
         /// Nodes created without a recognised title; the UI may offer to name them.
         public var untitled: [String] = []
+        /// Elements whose kind was a guess between several options.
+        public var choices: [Choice] = []
+        public init() {}
     }
 
-    /// The node kind a drawn shape becomes in this kind of diagram, or nil if it should stay a decoration.
-    public static func nodeKind(for shape: InkShapeKind, rect: Rect, family: DiagramFamily, language: SpecLanguage) -> NodeKind? {
+    /// A recognised element that could have been one of several kinds. The first option was applied.
+    public struct Choice: Equatable, Sendable {
+        public var id: String
+        public var options: [NodeKind]
+    }
+
+    /// What a drawn shape (nil = stick figure) can become in this kind of diagram, most likely first.
+    /// Empty when the diagram has no matching element, in which case it stays a decoration.
+    public static func choices(for shape: InkShapeKind?, rect: Rect, family: DiagramFamily, language: SpecLanguage) -> [NodeKind] {
         let wide = rect.size.width > rect.size.height * 1.6
+        let mermaid = language == .mermaid
         switch (family, shape) {
-        case (.flowchart, .rectangle): return .box
-        case (.flowchart, .ellipse): return language == .mermaid ? (wide ? .stadium : .circle) : .usecase
-        case (.flowchart, .diamond): return language == .mermaid ? .diamond : nil
-        case (.classDiagram, .rectangle): return .classType
-        case (.classDiagram, .ellipse): return .interfaceType
-        case (.erDiagram, .rectangle): return .entity
-        case (.c4, .rectangle): return .container
-        case (.c4, .ellipse): return .person
-        case (.sequence, .rectangle): return .participant
-        case (.sequence, .ellipse): return .actor
-        default: return nil
-        }
-    }
-
-    /// What a drawn stick figure becomes, or nil when the diagram has no person element (it then stays as ink).
-    public static func personKind(family: DiagramFamily, language: SpecLanguage) -> NodeKind? {
-        switch (family, language) {
-        case (.c4, _): .person
-        case (.sequence, _), (_, .plantUML): .actor
-        default: nil
+        case (.flowchart, .rectangle?): return mermaid ? [.box, .rounded, .hexagon, .parallelogram, .database]
+                                                       : [.box, .component, .node, .database, .queue, .cloud, .folder, .artifact]
+        case (.flowchart, .ellipse?): return mermaid ? (wide ? [.stadium, .circle, .rounded] : [.circle, .stadium, .rounded]) : [.usecase, .cloud]
+        case (.flowchart, .diamond?): return mermaid ? [.diamond, .hexagon] : []
+        case (.classDiagram, .rectangle?): return [.classType, .abstractClass, .interfaceType, .enumType]
+        case (.classDiagram, .ellipse?): return [.interfaceType, .classType]
+        case (.erDiagram, .rectangle?): return [.entity]
+        case (.c4, .rectangle?): return [.container, .system, .component4, .containerDb, .containerQueue, .systemExt, .containerExt]
+        case (.c4, .ellipse?): return [.person, .personExt, .system, .systemExt]
+        case (.c4, nil): return [.person, .personExt]
+        case (.sequence, .rectangle?): return mermaid ? [.participant, .actor] : [.participant, .database, .queue, .collections, .seqBoundary, .seqControl]
+        case (.sequence, .ellipse?): return mermaid ? [.actor, .participant] : [.actor, .seqEntity, .seqControl, .seqBoundary]
+        case (.sequence, nil): return mermaid ? [.actor, .participant] : [.actor, .participant]
+        case (_, nil): return mermaid ? [] : [.actor]
+        default: return []
         }
     }
 
@@ -84,9 +90,8 @@ public enum InkCommit {
         for shape in shapes {
             let title = shape.words.sorted { abs($0.1.minY - $1.1.minY) > 10 ? $0.1.minY < $1.1.minY : $0.1.minX < $1.1.minX }
                 .map(\.0).joined(separator: " ")
-            let kind = shape.kind.map { nodeKind(for: $0, rect: shape.rect, family: parsed.family, language: state.language) }
-                ?? personKind(family: parsed.family, language: state.language)
-            guard let kind else {
+            let options = choices(for: shape.kind, rect: shape.rect, family: parsed.family, language: state.language)
+            guard let kind = options.first else {
                 let origin = shape.rect.origin
                 let d = shape.kind == nil
                     ? Decoration(kind: .ink, frame: shape.rect, text: title,
@@ -110,6 +115,7 @@ public enum InkCommit {
             }
             result.created.append(.node(id))
             drawn.append((id, shape.rect))
+            if options.count > 1 { result.choices.append(Choice(id: id, options: options)) }
             if title.isEmpty { result.untitled.append(id) }
         }
         parsed = Engine.reconcile(&state, measure: measure)

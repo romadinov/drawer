@@ -39,9 +39,11 @@ struct DiagramCommands: Commands {
             Button("Export PNG…") { if let d = document { Exporter.exportImage(d, format: .png) } }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
                 .disabled(document == nil)
+            Button("Export SVG…") { if let d = document { Exporter.exportImage(d, format: .svg) } }
+                .disabled(document == nil)
             Button("Export PDF…") { if let d = document { Exporter.exportImage(d, format: .pdf) } }
                 .disabled(document == nil)
-            Button("Copy as PNG") { if let d = document { Exporter.copyPNG(d) } }
+            Button("Copy Diagram as Image") { if let d = document { Exporter.copyPNG(d) } }
                 .keyboardShortcut("c", modifiers: [.command, .option])
                 .disabled(document == nil)
         }

@@ -60,8 +60,7 @@ struct DiagramRenderer {
         let attrs: [NSAttributedString.Key: Any] = [.font: f, .foregroundColor: color, .paragraphStyle: paragraph(alignment)]
         let s = NSAttributedString(string: text, attributes: attrs)
         let bounds = s.boundingRect(with: CGSize(width: rect.width, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
-        s.draw(with: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: max(rect.height, bounds.height)),
-               options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+        drawAttributed(s, in: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: max(rect.height, bounds.height)))
         return ceil(bounds.height)
     }
 
@@ -99,20 +98,20 @@ struct DiagramRenderer {
         let path = Self.outline(for: node.kind, in: r)
         if node.kind == .collections {
             let back = NSBezierPath(roundedRect: r.offsetBy(dx: 5, dy: -5), xRadius: 3, yRadius: 3)
-            p.fill.setFill(); back.fill()
-            p.stroke.setStroke(); back.lineWidth = lw; back.stroke()
+            p.fill.useForFill(); back.paintFill()
+            p.stroke.useForStroke(); back.lineWidth = lw; back.paintStroke()
         }
         if !node.kind.isIconWithLabel {
-            let ctx = currentGraphicsContext
+            let ctx = SVGSurface.current == nil ? currentGraphicsContext : nil
             ctx?.saveGState()
             ctx?.setShadow(offset: CGSize(width: 0, height: shadowOffsetDown * 1.5), blur: 3, color: NSColor.black.withAlphaComponent(0.12).cgColor)
-            p.fill.setFill()
-            path.fill()
+            p.fill.useForFill()
+            path.paintFill()
             ctx?.restoreGState()
-            p.stroke.setStroke()
+            p.stroke.useForStroke()
             path.lineWidth = lw
             if dashed { path.setLineDash([6, 4], count: 2, phase: 0) }
-            path.stroke()
+            path.paintStroke()
         }
 
         switch node.kind {
@@ -130,9 +129,9 @@ struct DiagramRenderer {
 
         if selected || highlighted == node.id {
             let sel = NSBezierPath(roundedRect: r.insetBy(dx: -3, dy: -3), xRadius: 6, yRadius: 6)
-            NodePalette.selection.withAlphaComponent(selected ? 0.9 : 0.5).setStroke()
+            NodePalette.selection.withAlphaComponent(selected ? 0.9 : 0.5).useForStroke()
             sel.lineWidth = selected ? 2 : 1.5
-            sel.stroke()
+            sel.paintStroke()
         }
     }
 
@@ -215,8 +214,8 @@ struct DiagramRenderer {
         path.move(to: CGPoint(x: r.minX, y: r.minY + e))
         path.curve(to: CGPoint(x: r.maxX, y: r.minY + e), controlPoint1: CGPoint(x: r.minX, y: r.minY + e + e * 1.33), controlPoint2: CGPoint(x: r.maxX, y: r.minY + e + e * 1.33))
         path.lineWidth = lw
-        p.stroke.setStroke()
-        path.stroke()
+        p.stroke.useForStroke()
+        path.paintStroke()
     }
 
     private func drawQueueEnd(_ r: CGRect, _ p: NodePalette, lw: CGFloat) {
@@ -225,19 +224,19 @@ struct DiagramRenderer {
         path.move(to: CGPoint(x: r.maxX - e, y: r.minY))
         path.curve(to: CGPoint(x: r.maxX - e, y: r.maxY), controlPoint1: CGPoint(x: r.maxX - e - e * 1.33, y: r.minY), controlPoint2: CGPoint(x: r.maxX - e - e * 1.33, y: r.maxY))
         path.lineWidth = lw
-        p.stroke.setStroke()
-        path.stroke()
+        p.stroke.useForStroke()
+        path.paintStroke()
     }
 
     private func drawComponentIcon(_ r: CGRect, _ p: NodePalette) {
         let x = r.maxX - 20, y = r.minY + 7
         let body = NSBezierPath(rect: CGRect(x: x, y: y, width: 12, height: 14))
-        p.stroke.setStroke()
+        p.stroke.useForStroke()
         body.lineWidth = 1
-        body.stroke()
+        body.paintStroke()
         for dy in [3.0, 9.0] {
             let tab = NSBezierPath(rect: CGRect(x: x - 3, y: y + dy, width: 6, height: 3))
-            p.fill.setFill(); tab.fill(); tab.stroke()
+            p.fill.useForFill(); tab.paintFill(); tab.paintStroke()
         }
     }
 
@@ -249,8 +248,8 @@ struct DiagramRenderer {
         path.line(to: CGPoint(x: r.maxX, y: r.maxY))
         path.move(to: CGPoint(x: r.maxX, y: r.minY)); path.line(to: CGPoint(x: r.maxX + d, y: r.minY - d))
         path.lineWidth = lw
-        p.stroke.setStroke()
-        path.stroke()
+        p.stroke.useForStroke()
+        path.paintStroke()
     }
 
     private func drawGenericContent(_ node: DiagramNode, _ r: CGRect, _ p: NodePalette) {
@@ -269,17 +268,17 @@ struct DiagramRenderer {
     private func drawActor(_ node: DiagramNode, _ r: CGRect, _ p: NodePalette) {
         let cx = r.midX
         let top = r.minY + 4
-        p.stroke.setStroke()
+        p.stroke.useForStroke()
         let head = NSBezierPath(ovalIn: CGRect(x: cx - 8, y: top, width: 16, height: 16))
         head.lineWidth = 1.5
-        NodePalette.canvas.setFill(); head.fill(); head.stroke()
+        NodePalette.canvas.useForFill(); head.paintFill(); head.paintStroke()
         let body = NSBezierPath()
         body.move(to: CGPoint(x: cx, y: top + 16)); body.line(to: CGPoint(x: cx, y: top + 36))
         body.move(to: CGPoint(x: cx - 14, y: top + 23)); body.line(to: CGPoint(x: cx + 14, y: top + 23))
         body.move(to: CGPoint(x: cx, y: top + 36)); body.line(to: CGPoint(x: cx - 11, y: top + 52))
         body.move(to: CGPoint(x: cx, y: top + 36)); body.line(to: CGPoint(x: cx + 11, y: top + 52))
         body.lineWidth = 1.5
-        body.stroke()
+        body.paintStroke()
         Self.drawText(node.title, font: Fonts.title, color: p.text, in: CGRect(x: r.minX - 20, y: top + 56, width: r.width + 40, height: 0))
     }
 
@@ -288,8 +287,8 @@ struct DiagramRenderer {
         let radius: CGFloat = 18
         let circle = NSBezierPath(ovalIn: CGRect(x: c.x - radius, y: c.y - radius, width: radius * 2, height: radius * 2))
         circle.lineWidth = 1.5
-        NodePalette.for(.participant).fill.setFill(); circle.fill()
-        p.stroke.setStroke(); circle.stroke()
+        NodePalette.for(.participant).fill.useForFill(); circle.paintFill()
+        p.stroke.useForStroke(); circle.paintStroke()
         let mark = NSBezierPath()
         mark.lineWidth = 1.5
         switch node.kind {
@@ -301,7 +300,7 @@ struct DiagramRenderer {
         default:
             mark.move(to: CGPoint(x: c.x - radius, y: c.y + radius + 3)); mark.line(to: CGPoint(x: c.x + radius, y: c.y + radius + 3))
         }
-        mark.stroke()
+        mark.paintStroke()
         Self.drawText(node.title, font: Fonts.title, color: p.text, in: CGRect(x: r.minX - 30, y: r.minY + 52, width: r.width + 60, height: 0))
     }
 
@@ -312,11 +311,11 @@ struct DiagramRenderer {
         for f in seq.fragments {
             let r = CGRect(f.rect)
             let box = NSBezierPath(roundedRect: r, xRadius: 4, yRadius: 4)
-            NSColor.dynamic(light: NSColor(white: 0, alpha: 0.025), dark: NSColor(white: 1, alpha: 0.035)).setFill()
-            box.fill()
-            NodePalette.edge.withAlphaComponent(0.7).setStroke()
+            NSColor.dynamic(light: NSColor(white: 0, alpha: 0.025), dark: NSColor(white: 1, alpha: 0.035)).useForFill()
+            box.paintFill()
+            NodePalette.edge.withAlphaComponent(0.7).useForStroke()
             box.lineWidth = 1
-            box.stroke()
+            box.paintStroke()
             let tag = f.kind
             let tagSize = (tag as NSString).size(withAttributes: [.font: Fonts.groupTitle])
             let tagRect = CGRect(x: r.minX, y: r.minY, width: tagSize.width + 18, height: 20)
@@ -324,8 +323,8 @@ struct DiagramRenderer {
             pent.move(to: CGPoint(x: tagRect.minX, y: tagRect.minY)); pent.line(to: CGPoint(x: tagRect.maxX, y: tagRect.minY))
             pent.line(to: CGPoint(x: tagRect.maxX, y: tagRect.maxY - 6)); pent.line(to: CGPoint(x: tagRect.maxX - 6, y: tagRect.maxY))
             pent.line(to: CGPoint(x: tagRect.minX, y: tagRect.maxY)); pent.close()
-            NSColor.dynamic(light: NSColor(white: 0.93, alpha: 1), dark: NSColor(white: 0.22, alpha: 1)).setFill(); pent.fill()
-            pent.stroke()
+            NSColor.dynamic(light: NSColor(white: 0.93, alpha: 1), dark: NSColor(white: 0.22, alpha: 1)).useForFill(); pent.paintFill()
+            pent.paintStroke()
             Self.drawText(tag, font: Fonts.groupTitle, color: .labelColor, in: tagRect.insetBy(dx: 6, dy: 3), alignment: .left)
             if !f.label.isEmpty {
                 Self.drawText("[\(f.label)]", font: Fonts.edgeLabel, color: .secondaryLabelColor,
@@ -336,7 +335,7 @@ struct DiagramRenderer {
                 line.move(to: CGPoint(x: r.minX, y: sep.y)); line.line(to: CGPoint(x: r.maxX, y: sep.y))
                 line.setLineDash([5, 3], count: 2, phase: 0)
                 line.lineWidth = 1
-                line.stroke()
+                line.paintStroke()
                 if !sep.label.isEmpty {
                     Self.drawText("[\(sep.label)]", font: Fonts.edgeLabel, color: .secondaryLabelColor,
                                   in: CGRect(x: r.minX + 10, y: sep.y + 3, width: r.width - 20, height: 0), alignment: .left)
@@ -349,28 +348,28 @@ struct DiagramRenderer {
             line.move(to: CGPoint(x: l.x, y: l.top)); line.line(to: CGPoint(x: l.x, y: l.bottom))
             line.setLineDash([6, 4], count: 2, phase: 0)
             line.lineWidth = selection.contains(.node(id)) ? 1.6 : 1
-            (selection.contains(.node(id)) ? NodePalette.selection : NodePalette.edge.withAlphaComponent(0.6)).setStroke()
-            line.stroke()
+            (selection.contains(.node(id)) ? NodePalette.selection : NodePalette.edge.withAlphaComponent(0.6)).useForStroke()
+            line.paintStroke()
         }
         for a in seq.activations {
             let r = CGRect(a.rect)
             let path = NSBezierPath(rect: r)
             let palette = parsed.node(a.participant).map(palette(for:)) ?? NodePalette.for(.participant)
-            NSColor.dynamic(light: NSColor(white: 0.94, alpha: 1), dark: NSColor(white: 0.25, alpha: 1)).setFill()
-            path.fill()
-            palette.stroke.setStroke()
+            NSColor.dynamic(light: NSColor(white: 0.94, alpha: 1), dark: NSColor(white: 0.25, alpha: 1)).useForFill()
+            path.paintFill()
+            palette.stroke.useForStroke()
             path.lineWidth = 1
-            path.stroke()
+            path.paintStroke()
         }
         for d in seq.dividers {
             let r = CGRect(x: seq.left - 20, y: d.y - 2, width: seq.right - seq.left + 40, height: 4)
             let band = NSBezierPath(rect: r)
-            NodePalette.edge.withAlphaComponent(0.25).setFill(); band.fill()
+            NodePalette.edge.withAlphaComponent(0.25).useForFill(); band.paintFill()
             let size = (d.text as NSString).size(withAttributes: [.font: Fonts.groupTitle])
             let label = CGRect(x: r.midX - size.width / 2 - 10, y: d.y - size.height / 2 - 3, width: size.width + 20, height: size.height + 6)
             let box = NSBezierPath(roundedRect: label, xRadius: 3, yRadius: 3)
-            NodePalette.canvas.setFill(); box.fill()
-            NodePalette.edge.setStroke(); box.lineWidth = 1; box.stroke()
+            NodePalette.canvas.useForFill(); box.paintFill()
+            NodePalette.edge.useForStroke(); box.lineWidth = 1; box.paintStroke()
             Self.drawText(d.text, font: Fonts.groupTitle, color: .labelColor, in: label.insetBy(dx: 10, dy: 3))
         }
         for y in seq.delays {
@@ -381,8 +380,8 @@ struct DiagramRenderer {
         for note in seq.notes {
             let r = CGRect(note.rect)
             let path = Self.outline(for: .note, in: r)
-            NSColor(hex: "#FFF6B3")!.setFill(); path.fill()
-            NSColor(hex: "#C9B458")!.setStroke(); path.lineWidth = 1; path.stroke()
+            NSColor(hex: "#FFF6B3")!.useForFill(); path.paintFill()
+            NSColor(hex: "#C9B458")!.useForStroke(); path.lineWidth = 1; path.paintStroke()
             Self.drawText(note.text, font: Fonts.body, color: NSColor(white: 0.1, alpha: 1), in: r.insetBy(dx: 10, dy: 7), alignment: .left)
         }
     }
@@ -395,8 +394,8 @@ struct DiagramRenderer {
             // Head silhouette above the title.
             let d = CGFloat(Metrics.personHead) * 0.55
             let head = NSBezierPath(ovalIn: CGRect(x: r.midX - d / 2, y: y - 2, width: d, height: d))
-            p.text.withAlphaComponent(0.9).setFill()
-            head.fill()
+            p.text.withAlphaComponent(0.9).useForFill()
+            head.paintFill()
             y += d + 2
         }
         if node.kind.isCylinder { y += 10 }
@@ -427,8 +426,8 @@ struct DiagramRenderer {
             let line = NSBezierPath()
             line.move(to: CGPoint(x: r.minX, y: y)); line.line(to: CGPoint(x: r.maxX, y: y))
             line.lineWidth = lw * 0.8
-            p.stroke.setStroke()
-            line.stroke()
+            p.stroke.useForStroke()
+            line.paintStroke()
         }
         separator(y)
         y += CGFloat(Metrics.compartmentGap)
@@ -454,12 +453,12 @@ struct DiagramRenderer {
         let r = CGRect(f)
         let p = palette(for: node)
         let path = NSBezierPath(roundedRect: r, xRadius: 8, yRadius: 8)
-        p.fill.setFill()
-        path.fill()
+        p.fill.useForFill()
+        path.paintFill()
         path.lineWidth = strokeWidth(node.id, default: 1.2)
         path.setLineDash([7, 4], count: 2, phase: 0)
-        p.stroke.setStroke()
-        path.stroke()
+        p.stroke.useForStroke()
+        path.paintStroke()
         let selected = selection.contains(.node(node.id))
         if node.kind == .boundary {
             var y = r.maxY - CGFloat(Metrics.groupHeader) - 12
@@ -473,9 +472,9 @@ struct DiagramRenderer {
         }
         if selected || highlighted == node.id {
             let sel = NSBezierPath(roundedRect: r.insetBy(dx: -3, dy: -3), xRadius: 10, yRadius: 10)
-            NodePalette.selection.withAlphaComponent(selected ? 0.9 : 0.5).setStroke()
+            NodePalette.selection.withAlphaComponent(selected ? 0.9 : 0.5).useForStroke()
             sel.lineWidth = 2
-            sel.stroke()
+            sel.paintStroke()
         }
     }
 
@@ -532,8 +531,8 @@ struct DiagramRenderer {
         path.lineCapStyle = .round
         if edge.line == .dashed || style?.dashed == true { path.setLineDash([6, 4], count: 2, phase: 0) }
         if edge.line == .dotted { path.setLineDash([2, 3], count: 2, phase: 0) }
-        color.setStroke()
-        path.stroke()
+        color.useForStroke()
+        path.paintStroke()
 
         drawMarker(edge.endMarker, tip: points[points.count - 1], from: points[points.count - 2], color: color, lw: lw)
         drawMarker(edge.startMarker, tip: points[0], from: points[1], color: color, lw: lw)
@@ -543,15 +542,15 @@ struct DiagramRenderer {
             let pos = CGPoint(geometry.labelPosition(edge, path: geometry.edgePath(edge)))
             let rect = Self.labelRect(label, at: pos)
             let bg = NSBezierPath(roundedRect: rect.insetBy(dx: -3, dy: -1), xRadius: 4, yRadius: 4)
-            NodePalette.canvas.withAlphaComponent(0.92).setFill()
-            bg.fill()
+            NodePalette.canvas.withAlphaComponent(0.92).useForFill()
+            bg.paintFill()
             if selected {
-                NodePalette.selection.withAlphaComponent(0.6).setStroke()
+                NodePalette.selection.withAlphaComponent(0.6).useForStroke()
                 bg.lineWidth = 1
-                bg.stroke()
+                bg.paintStroke()
             }
             let attributed = Self.labelString(label, edge: edge, color: selected ? NodePalette.selection : NSColor.labelColor)
-            attributed.draw(with: rect, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+            Self.drawAttributed(attributed, in: rect)
         }
         if let s = edge.fromLabel, !s.isEmpty { drawEndLabel(s, tip: points[0], toward: points[1]) }
         if let s = edge.toLabel, !s.isEmpty { drawEndLabel(s, tip: points[points.count - 1], toward: points[points.count - 2]) }
@@ -608,28 +607,28 @@ struct DiagramRenderer {
         let path = NSBezierPath()
         path.lineWidth = max(lw, 1.2)
         path.lineJoinStyle = .miter
-        color.setStroke()
+        color.useForStroke()
         switch marker {
         case .arrow:
             path.move(to: pt(11, -6)); path.line(to: tip); path.line(to: pt(11, 6))
-            path.stroke()
+            path.paintStroke()
         case .filledArrow:
             path.move(to: tip); path.line(to: pt(10, -5)); path.line(to: pt(10, 5)); path.close()
-            color.setFill(); path.fill(); path.stroke()
+            color.useForFill(); path.paintFill(); path.paintStroke()
         case .triangle:
             path.move(to: tip); path.line(to: pt(13, -7.5)); path.line(to: pt(13, 7.5)); path.close()
-            NodePalette.canvas.setFill(); path.fill(); path.stroke()
+            NodePalette.canvas.useForFill(); path.paintFill(); path.paintStroke()
         case .diamond, .filledDiamond:
             path.move(to: tip); path.line(to: pt(8, -5.5)); path.line(to: pt(16, 0)); path.line(to: pt(8, 5.5)); path.close()
-            (marker == .filledDiamond ? color : NodePalette.canvas).setFill(); path.fill(); path.stroke()
+            (marker == .filledDiamond ? color : NodePalette.canvas).useForFill(); path.paintFill(); path.paintStroke()
         case .circle:
             let c = pt(4, 0)
             let o = NSBezierPath(ovalIn: CGRect(x: c.x - 4, y: c.y - 4, width: 8, height: 8))
             o.lineWidth = path.lineWidth
-            NodePalette.canvas.setFill(); o.fill(); o.stroke()
+            NodePalette.canvas.useForFill(); o.paintFill(); o.paintStroke()
         case .cross:
             path.move(to: pt(2, -5)); path.line(to: pt(10, 5)); path.move(to: pt(2, 5)); path.line(to: pt(10, -5))
-            path.stroke()
+            path.paintStroke()
         case .exactlyOne, .zeroOrOne, .oneOrMany, .zeroOrMany:
             let many = marker == .oneOrMany || marker == .zeroOrMany
             let zero = marker == .zeroOrOne || marker == .zeroOrMany
@@ -643,12 +642,12 @@ struct DiagramRenderer {
                 let bar2: CGFloat = many ? 19 : 13
                 path.move(to: pt(bar2, -7)); path.line(to: pt(bar2, 7))
             }
-            path.stroke()
+            path.paintStroke()
             if zero {
                 let c = pt(bar1 + 9, 0)
                 let o = NSBezierPath(ovalIn: CGRect(x: c.x - 4.5, y: c.y - 4.5, width: 9, height: 9))
                 o.lineWidth = path.lineWidth
-                NodePalette.canvas.setFill(); o.fill(); o.stroke()
+                NodePalette.canvas.useForFill(); o.paintFill(); o.paintStroke()
             }
         case .none: break
         }
@@ -667,23 +666,23 @@ struct DiagramRenderer {
         case .rectangle, .roundedRectangle, .ellipse:
             let path: NSBezierPath = d.kind == .ellipse ? NSBezierPath(ovalIn: r)
                 : NSBezierPath(roundedRect: r, xRadius: d.kind == .roundedRectangle ? 14 : 2, yRadius: d.kind == .roundedRectangle ? 14 : 2)
-            (NSColor(hex: d.style.fill) ?? NSColor.systemBlue.withAlphaComponent(0.07)).setFill()
-            path.fill()
+            (NSColor(hex: d.style.fill) ?? NSColor.systemBlue.withAlphaComponent(0.07)).useForFill()
+            path.paintFill()
             if d.style.dashed == true { path.setLineDash([7, 4], count: 2, phase: 0) }
             path.lineWidth = lw
-            stroke.setStroke()
-            path.stroke()
+            stroke.useForStroke()
+            path.paintStroke()
             if !d.text.isEmpty {
                 Self.drawText(d.text, font: .systemFont(ofSize: d.fontSize, weight: .semibold), color: textColor,
                               in: CGRect(x: r.minX + 10, y: r.minY + 8, width: r.width - 20, height: 0), alignment: .left)
             }
         case .note:
             let path = Self.outline(for: .note, in: r)
-            (NSColor(hex: d.style.fill) ?? NSColor(hex: "#FFF6B3")!).setFill()
-            path.fill()
+            (NSColor(hex: d.style.fill) ?? NSColor(hex: "#FFF6B3")!).useForFill()
+            path.paintFill()
             path.lineWidth = 1
-            (NSColor(hex: d.style.stroke) ?? NSColor(hex: "#C9B458")!).setStroke()
-            path.stroke()
+            (NSColor(hex: d.style.stroke) ?? NSColor(hex: "#C9B458")!).useForStroke()
+            path.paintStroke()
             Self.drawText(d.text, font: font, color: NSColor(hex: d.style.text) ?? NSColor(white: 0.1, alpha: 1),
                           in: CGRect(x: r.minX + 10, y: r.minY + 10, width: r.width - 26, height: 0), alignment: .left)
         case .text:
@@ -698,8 +697,8 @@ struct DiagramRenderer {
             path.lineWidth = lw
             path.lineCapStyle = .round
             if d.style.dashed == true { path.setLineDash([6, 4], count: 2, phase: 0) }
-            stroke.setStroke()
-            path.stroke()
+            stroke.useForStroke()
+            path.paintStroke()
             if d.kind == .arrow { drawMarker(.filledArrow, tip: b, from: a, color: stroke, lw: lw) }
             if !d.text.isEmpty {
                 let mid = CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 10)
@@ -711,8 +710,8 @@ struct DiagramRenderer {
             let sel = NSBezierPath(rect: (d.kind == .line || d.kind == .arrow ? r : r.insetBy(dx: -3, dy: -3)))
             sel.setLineDash([3, 3], count: 2, phase: 0)
             sel.lineWidth = 1
-            NodePalette.selection.setStroke()
-            sel.stroke()
+            NodePalette.selection.useForStroke()
+            sel.paintStroke()
         }
     }
 
@@ -728,7 +727,7 @@ struct DiagramRenderer {
         path.lineWidth = width
         path.lineCapStyle = .round
         path.lineJoinStyle = .round
-        color.setStroke()
-        path.stroke()
+        color.useForStroke()
+        path.paintStroke()
     }
 }

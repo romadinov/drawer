@@ -88,18 +88,11 @@ private struct NodeInspector: View {
             SectionTitle("Spec")
             TextField("Title", text: $title).onSubmit(commitTitle)
 
-            if node.kind.isClassifier {
-                Picker("Kind", selection: Binding(get: { node.kind }, set: { document.updateNode(node.id, NodeEdit(kind: $0)) })) {
-                    ForEach([NodeKind.classType, .abstractClass, .interfaceType, .enumType], id: \.self) { Text($0.displayName).tag($0) }
-                }
-            } else if node.kind.isC4 {
-                Picker("Kind", selection: Binding(get: { node.kind }, set: { document.updateNode(node.id, NodeEdit(kind: $0)) })) {
-                    ForEach(NodeKind.allCases.filter(\.isC4), id: \.self) { Text($0.displayName).tag($0) }
-                }
-            } else if !node.kind.isGroup && node.kind != .entity {
-                Picker("Shape", selection: Binding(get: { node.kind }, set: { document.updateNode(node.id, NodeEdit(kind: $0)) })) {
-                    ForEach(NodeKind.palette(for: .flowchart, language: document.state.language), id: \.self) { Text($0.displayName).tag($0) }
-                    if !NodeKind.palette(for: .flowchart, language: document.state.language).contains(node.kind) { Text(node.kind.displayName).tag(node.kind) }
+            let kinds = NodeKind.alternatives(to: node.kind, family: family, language: document.state.language)
+            if kinds.count > 1 {
+                Picker(node.kind.isC4 || node.kind.isClassifier ? "Kind" : "Shape",
+                       selection: Binding(get: { node.kind }, set: { document.updateNode(node.id, NodeEdit(kind: $0)) })) {
+                    ForEach(kinds, id: \.self) { Text($0.displayName).tag($0) }
                 }
             }
 
