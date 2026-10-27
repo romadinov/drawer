@@ -327,6 +327,11 @@ struct SpecPane: View {
         return s.items.isEmpty || s.range.length == 0 ? nil : s
     }
 
+    static func straightQuotes(_ s: String) -> String {
+        s.replacingOccurrences(of: "\u{201C}", with: "\"").replacingOccurrences(of: "\u{201D}", with: "\"")
+            .replacingOccurrences(of: "\u{2018}", with: "'").replacingOccurrences(of: "\u{2019}", with: "'")
+    }
+
     private func accept(_ item: String, _ s: SpecCompleter.Suggestions) {
         let new = (document.state.spec as NSString).replacingCharacters(in: s.range, with: item)
         document.specTextChanged(new)
@@ -346,7 +351,8 @@ struct SpecPane: View {
                 Text(document.parsed.family.displayName).font(.caption).foregroundStyle(.secondary)
             }
             .padding(10)
-            TextEditor(text: Binding(get: { document.state.spec }, set: { document.specTextChanged($0) }), selection: $selection)
+            // The iPad keyboard types curly quotes, which PlantUML and Mermaid don't accept.
+            TextEditor(text: Binding(get: { document.state.spec }, set: { document.specTextChanged(Self.straightQuotes($0)) }), selection: $selection)
                 .font(.system(.footnote, design: .monospaced))
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)

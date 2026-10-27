@@ -9,6 +9,12 @@ struct DrawerApp: App {
         if let i = args.firstIndex(of: "--export"), args.count > i + 2 {
             MainActor.assumeIsolated { HeadlessExport.run(input: args[i + 1], output: args[i + 2]) }
         }
+        #if DEBUG
+        if let i = args.firstIndex(of: "--replay-ink"), args.count > i + 1 {
+            let out = args[i + 1]
+            MainActor.assumeIsolated { DebugReplay.start(output: out) }
+        }
+        #endif
         if let i = args.firstIndex(of: "--ink"), args.count > i + 2 {
             MainActor.assumeIsolated { HeadlessExport.recognizeInk(input: args[i + 1], output: args[i + 2]) }
         }

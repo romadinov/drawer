@@ -70,6 +70,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
     // The inline title editor is a subview in view coordinates, so it has to follow every zoom and pan.
     private(set) var zoom: CGFloat = 1 { didSet { repositionInlineEditor() } }
     private var pan = CGPoint(x: 0, y: 0) { didSet { repositionInlineEditor() } }
+    var panOffset: CGPoint { pan }
     private var didInitialFit = false
 
     private enum Interaction {
@@ -394,6 +395,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
 
         switch tool {
         case .draw:
+            if case .inking = interaction { ink.end() }
             interaction = .inking
             ink.begin(at: p.point)
             return

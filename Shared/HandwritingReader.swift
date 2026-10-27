@@ -54,26 +54,50 @@ enum HandwritingReader {
     }
 }
 
+/// Debug-only trace of ink handling (set DRAWER_INK_TRACE to a file path).
+func inkTrace(_ s: @autoclosure () -> String) {
+    #if DEBUG
+    guard let path = ProcessInfo.processInfo.environment["DRAWER_INK_TRACE"] else { return }
+    let line = Data((String(format: "%.3f ", Date().timeIntervalSince1970) + s() + "\n").utf8)
+    if let h = FileHandle(forWritingAtPath: path) { h.seekToEndOfFile(); h.write(line); try? h.close() }
+    else { FileManager.default.createFile(atPath: path, contents: line) }
+    #endif
+}
+
 /// Collects freehand strokes and, after a short pause, turns them into diagram elements.
+/// Each pause hands the strokes drawn so far to recognition as one batch; a slow batch never holds up
+/// the next, and handwriting recognition gives up after a few seconds rather than leaving ink stuck.
 @MainActor
 final class InkSession {
+    /// Finished strokes waiting for the pause.
     private(set) var strokes: [InkStroke] = []
+    /// Batches being recognised (still drawn until their elements appear).
+    private var recognising: [[InkStroke]] = []
     private var current: [Point]?
+    private var lastInput = Date()
     private var timer: Timer?
     weak var document: DrawerDocument?
     /// Called whenever the pending ink changes so the canvas can redraw.
     var onChange: () -> Void = {}
     /// Seconds of no drawing before the ink is recognised.
     var delay: TimeInterval = 0.9
+    /// Longest wait for handwriting recognition before the writing is kept as ink instead.
+    var readTimeout: Double = 4
 
     /// Pending ink, including the stroke being drawn.
-    var pending: [[Point]] { strokes.map(\.points) + (current.map { [$0] } ?? []) }
-    var isEmpty: Bool { strokes.isEmpty && current == nil }
+    var pending: [[Point]] { recognising.flatMap { $0.map(\.points) } + strokes.map(\.points) + (current.map { [$0] } ?? []) }
+    var isEmpty: Bool { strokes.isEmpty && current == nil && recognising.isEmpty }
+    var isDrawing: Bool { current != nil }
 
     func begin(at p: Point) {
+        inkTrace("begin current=\(current != nil) strokes=\(strokes.count)")
         timer?.invalidate()
+        // A stroke whose pen-up never arrived is kept, not thrown away.
+        if let c = current, c.count > 1 { strokes.append(InkStroke(c)) }
         current = [p]
+        lastInput = Date()
         onChange()
+        scheduleCommit()   // re-arms while drawing; also recovers a stroke whose pen-up never arrives
     }
 
     func add(_ p: Point) {
@@ -81,17 +105,26 @@ final class InkSession {
         if let last = c.last, hypot(last.x - p.x, last.y - p.y) < 1.2 { return }
         c.append(p)
         current = c
+        lastInput = Date()
         onChange()
     }
 
     func end() {
+        inkTrace("end current=\(current != nil) strokes=\(strokes.count)")
         if let c = current { strokes.append(InkStroke(c)) }
         current = nil
         onChange()
+        scheduleCommit()
+    }
+
+    private func scheduleCommit() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+        let t = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated { self?.commit() }
         }
+        // Common modes: also fire while a menu, popover or text field is tracking the mouse.
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     /// Removes pending strokes that pass within `radius` of `p` (eraser over not-yet-recognised ink).
@@ -105,7 +138,7 @@ final class InkSession {
     func abandonStroke() {
         current = nil
         onChange()
-        if !strokes.isEmpty { end() }
+        if !strokes.isEmpty { scheduleCommit() }
     }
 
     func cancel() {
@@ -117,16 +150,42 @@ final class InkSession {
 
     /// Recognises everything drawn so far.
     func commit() {
+        inkTrace("commit current=\(current != nil) strokes=\(strokes.count) doc=\(document != nil)")
         timer?.invalidate()
-        guard current == nil, !strokes.isEmpty, let document else { return }
+        guard let document else { return }
+        // Still drawing: wait for this stroke to finish too — unless its pen-up was lost (no input for a while).
+        if let c = current {
+            guard Date().timeIntervalSince(lastInput) > 1.5 else { scheduleCommit(); return }
+            if c.count > 1 { strokes.append(InkStroke(c)) }
+            current = nil
+        }
+        guard !strokes.isEmpty else { return }
         let batch = strokes
+        strokes = []
+        recognising.append(batch)
         let hints = document.parsed.nodes.map(\.title) + document.parsed.edges.compactMap(\.label)
+        let timeout = readTimeout
         Task { @MainActor in
-            let items = await HandwritingReader.read(InkRecognizer.recognize(batch), hints: hints)
+            inkTrace("recognising \(batch.count)")
+            let shapes = InkRecognizer.recognize(batch)
+            let items = await Self.read(shapes, hints: hints, timeout: timeout)
             document.applyInk(items)
-            // Only drop the strokes that were recognised; more may have been drawn meanwhile.
-            if strokes.starts(with: batch) { strokes.removeFirst(batch.count) }
+            if let i = recognising.firstIndex(of: batch) { recognising.remove(at: i) }
+            inkTrace("recognised; pending now \(self.pending.count)")
             onChange()
+        }
+    }
+
+    /// Handwriting recognition, or the unread items if it takes longer than `timeout` seconds.
+    private static func read(_ items: [InkItem], hints: [String], timeout: Double) async -> [InkItem] {
+        guard items.contains(where: { if case .text(nil, _, _) = $0 { true } else { false } }) else { return items }
+        return await withTaskGroup(of: [InkItem]?.self) { group in
+            group.addTask { await HandwritingReader.read(items, hints: hints) }
+            group.addTask { try? await Task.sleep(for: .seconds(timeout)); return nil }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            if first == nil { inkTrace("handwriting recognition timed out") }
+            return first ?? items
         }
     }
 }

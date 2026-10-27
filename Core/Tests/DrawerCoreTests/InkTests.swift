@@ -330,4 +330,12 @@ extension Pen {
         InkCommit.apply([.shape(.rectangle, Rect(x: f.midX - 10, y: f.midY - 10, width: 20, height: 20))], to: &cls)
         #expect(SpecParser.parse(cls.spec, language: .mermaid).node("Order")?.kind == .classType)
     }
+
+    @Test func boxesWithTailsAreBoxes() {
+        // Pen starts left of the corner, goes round, and overshoots the start (as in a real sketch).
+        let tailed = Pen.polyline([Point(x: -50, y: 2), Point(x: 0, y: 0), Point(x: 10, y: 120), Point(x: 300, y: 115),
+                                   Point(x: 305, y: -20), Point(x: 5, y: 4), Point(x: 30, y: 30)])
+        #expect(kinds(InkRecognizer.recognize([tailed])) == ["rectangle"])
+        if case let .shape(_, r) = InkRecognizer.recognize([tailed]).first { #expect(r.minX > -10, "\(r)") }
+    }
 }

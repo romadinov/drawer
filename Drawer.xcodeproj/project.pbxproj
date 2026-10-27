@@ -15,6 +15,7 @@
 		1C3425404EAA8BF1ACA1069A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5108D66A9CCFF61C68A81523 /* ContentView.swift */; };
 		233ED5ECB7A5CAF2AE4CE95D /* ChoiceBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B46F880920F85E8264F568 /* ChoiceBar.swift */; };
 		34660205AD212750D07244C5 /* DrawerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */; };
+		3BFC4DD2486D78E29C40B42E /* DebugReplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 706EEC26A3C3B7067580FC26 /* DebugReplay.swift */; };
 		55F195C377957269384A7F58 /* DiagramExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 068783494CEDC1AF2E1E13A1 /* DiagramExport.swift */; };
 		5C80FDACC497E3D2E083F917 /* NewDiagramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B448B73A32D767AAFDF39830 /* NewDiagramView.swift */; };
 		5ECCB63572FF9F665ACE63C6 /* NewDiagramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B448B73A32D767AAFDF39830 /* NewDiagramView.swift */; };
@@ -38,6 +39,7 @@
 		C6D08BA0A760D33D10C14108 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 304666E1B7A34122C639FE6D /* InspectorView.swift */; };
 		C78559171AC370F0840B3739 /* HandwritingReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */; };
 		C99FC8AAE7271BCE6F5CBD84 /* SVGSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72BAAB3A390532F069E573B /* SVGSurface.swift */; };
+		C9A2D7F9C32673A92FD6B1C1 /* DemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A35CF46B4C710D76A328D53 /* DemoTests.swift */; };
 		FC382F09AFF95A28D0F7AA0E /* SpecEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A040740E0A59F71F43DEB54 /* SpecEditorView.swift */; };
 /* End PBXBuildFile section */
 
@@ -53,6 +55,7 @@
 
 /* Begin PBXFileReference section */
 		068783494CEDC1AF2E1E13A1 /* DiagramExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramExport.swift; sourceTree = "<group>"; };
+		0A35CF46B4C710D76A328D53 /* DemoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoTests.swift; sourceTree = "<group>"; };
 		187F7873D595746A0A428BDC /* DiagramRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramRenderer.swift; sourceTree = "<group>"; };
 		189AE165591E3831F2CA7C9B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2F5A8AA5167E216FBCD2B5A5 /* DrawerMobile.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DrawerMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -63,6 +66,7 @@
 		5B8E8F668E41584C7C6DF9AC /* MobileApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileApp.swift; sourceTree = "<group>"; };
 		612F415F0D6044A76F46DB0B /* MobileCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileCanvasView.swift; sourceTree = "<group>"; };
 		64759786F7ACF28092EB2F3B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		706EEC26A3C3B7067580FC26 /* DebugReplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugReplay.swift; sourceTree = "<group>"; };
 		9FABFF61B9C1C01A68D64A14 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		A10B05957B75E9638F894CC8 /* DrawerDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawerDocument.swift; sourceTree = "<group>"; };
 		A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawerApp.swift; sourceTree = "<group>"; };
@@ -102,6 +106,7 @@
 		1CD3AED49228DDBB2D0C8B37 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				0A35CF46B4C710D76A328D53 /* DemoTests.swift */,
 				CC0E1143C0E9AE7E9681429E /* WalkthroughTests.swift */,
 			);
 			name = UITests;
@@ -126,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				5108D66A9CCFF61C68A81523 /* ContentView.swift */,
+				706EEC26A3C3B7067580FC26 /* DebugReplay.swift */,
 				A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */,
 				E589DE6E6D6A894C7C5F3D08 /* Exporter.swift */,
 				304666E1B7A34122C639FE6D /* InspectorView.swift */,
@@ -339,6 +345,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9A2D7F9C32673A92FD6B1C1 /* DemoTests.swift in Sources */,
 				6A23D60F437D5EA08ACB892C /* WalkthroughTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -350,6 +357,7 @@
 				A469806B94B92EA0E786D2E6 /* CanvasView.swift in Sources */,
 				5F5C634203C277DFAC30FE23 /* ChoiceBar.swift in Sources */,
 				1C3425404EAA8BF1ACA1069A /* ContentView.swift in Sources */,
+				3BFC4DD2486D78E29C40B42E /* DebugReplay.swift in Sources */,
 				10735B0D1AB34A29BCEE22DA /* DiagramExport.swift in Sources */,
 				0CC45A1B7C9F9F9A1243F6AE /* DiagramRenderer.swift in Sources */,
 				34660205AD212750D07244C5 /* DrawerApp.swift in Sources */,

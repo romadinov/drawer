@@ -53,9 +53,10 @@ public enum InkRecognizer {
             used.formUnion(group)
         }
 
-        // 1. Single-stroke closed shapes.
+        // 1. Single-stroke closed shapes (ignoring the lead-in and lead-out where the pen overshoots).
         for (i, s) in strokes.enumerated() where !used.contains(i) {
-            if let kind = closedShape(s.points) { shapes.append((kind, s.bounds, [i])); used.insert(i) }
+            let loop = trimTails(s.points)
+            if let kind = closedShape(loop) { shapes.append((kind, InkMath.bounds(loop), [i])); used.insert(i) }
         }
         // 2. Closed shapes drawn in several strokes (e.g. a box as four sides).
         for chain in closedChains(strokes, excluding: used) {
@@ -106,6 +107,19 @@ public enum InkRecognizer {
     }
 
     // MARK: Closed shapes
+
+    /// The closed loop of a stroke that starts or ends with a tail: the part between the closest pair of
+    /// points near its two ends.
+    static func trimTails(_ p: [Point]) -> [Point] {
+        guard p.count >= 12 else { return p }
+        let r = InkMath.bounds(p)
+        let maxDim = max(r.size.width, r.size.height)
+        let head = 0..<(p.count * 3 / 10), tail = (p.count * 7 / 10)..<p.count
+        var best = (i: 0, j: p.count - 1, d: InkMath.distance(p[0], p[p.count - 1]))
+        for i in head { for j in tail { let d = InkMath.distance(p[i], p[j]); if d < best.d { best = (i, j, d) } } }
+        guard best.d < max(18, 0.22 * maxDim), best.i > 0 || best.j < p.count - 1 else { return p }
+        return Array(p[best.i...best.j])
+    }
 
     static func closedShape(_ points: [Point], alreadyClosed: Bool = false) -> InkShapeKind? {
         guard points.count >= 8 else { return nil }
