@@ -231,7 +231,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
                                      ? "Draw boxes, circles, diamonds and arrows, and write names inside them. They turn into diagram elements when you pause."
                                      : "Write a PlantUML or Mermaid spec on the left, pick a template, draw freehand (D), or choose a shape from the toolbar and click here.",
                                      font: .systemFont(ofSize: 13), color: .secondaryLabelColor,
-                                     in: CGRect(x: bounds.midX - 220, y: bounds.midY - 20, width: 440, height: 40))
+                                     in: CGRect(x: bounds.midX - min(440, bounds.width - 48) / 2, y: bounds.midY - 30, width: min(440, bounds.width - 48), height: 60))
         }
     }
 

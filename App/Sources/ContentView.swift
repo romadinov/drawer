@@ -76,11 +76,15 @@ struct ContentView: View {
                 }
                 .labelsHidden()
                 .pickerStyle(.segmented)
-                .frame(width: 170)
+                .fixedSize()
                 .help("Language the spec is written in")
+                // One line, truncating if the pane is narrow (it used to wrap a letter per line).
                 Text(document.parsed.family.displayName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .layoutPriority(-1)
                 Spacer()
                 Menu {
                     ForEach(SpecLanguage.allCases.filter { $0 != document.state.language }) { lang in
