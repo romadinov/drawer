@@ -226,7 +226,8 @@ final class DrawerDocument: Document {
         var result = InkCommit.Result()
         change("Draw") { state, _ in result = InkCommit.apply(items, to: &state, measure: appMeasurer) }
         pendingChoices = result.choices + pendingChoices
-        if let id = result.edit {
+        if let id = result.edit ?? (result.choices.isEmpty ? result.untitled.last : nil) {
+            // A connector drawn back onto its block, or a new unnamed element nothing needs asking about: name it.
             selection = [.node(id)]
             pendingInlineEdit = .node(id)
         } else if let c = currentChoice {
@@ -243,8 +244,22 @@ final class DrawerDocument: Document {
     func resolveChoice(_ kind: NodeKind) {
         guard let c = currentChoice else { return }
         pendingChoices.removeAll { $0.id == c.id }
-        if parsed.node(c.id)?.kind != kind { updateNode(c.id, NodeEdit(kind: kind)) }
-        if let next = currentChoice { selection = [.node(next.id)] }
+        var id = c.id
+        if parsed.node(c.id)?.kind != kind {
+            let before = selection
+            updateNode(c.id, NodeEdit(kind: kind))
+            // The placeholder name may have followed the kind, which can change an identifier-based id.
+            if parsed.node(c.id) == nil, let renamed = parsed.nodes.first(where: { $0.title == kind.displayName && $0.kind == kind })?.id { id = renamed }
+            if selection == before { selection = [.node(id)] }
+        }
+        if let next = currentChoice {
+            selection = [.node(next.id)]
+        } else if c.needsName {
+            // Kind settled — straight on to naming it.
+            selection = [.node(id)]
+            selectionOrigin = .canvas
+            pendingInlineEdit = .node(id)
+        }
     }
 
     /// Keeps the guess for the element being asked about and moves on to the next.

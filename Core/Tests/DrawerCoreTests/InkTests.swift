@@ -243,4 +243,26 @@ extension Pen {
             }
         }
     }
+
+    @Test func placeholderNameFollowsKind() {
+        for language in SpecLanguage.allCases {
+            var state = DrawingState(language: language, spec: DiagramStarter.blankSpec(.flowchart, language: language))
+            let r = InkCommit.apply([.shape(.ellipse, Rect(x: 0, y: 0, width: 160, height: 80))], to: &state)
+            let c = r.choices[0]
+            #expect(c.needsName)
+            let first = SpecParser.parse(state.spec, language: language).node(c.id)!
+            #expect(first.title == first.kind.displayName)
+            let other = c.options[1]
+            let id = Engine.updateNode(&state, id: c.id, NodeEdit(kind: other))
+            let after = SpecParser.parse(state.spec, language: language)
+            #expect(after.node(id)?.kind == other, "\(language): \(state.spec)")
+            #expect(after.node(id)?.title == other.displayName, "\(language): \(state.spec)")
+            #expect(after.diagnostics.isEmpty)
+            // A real name is left alone.
+            Engine.updateNode(&state, id: id, NodeEdit(title: "Billing"))
+            let named = SpecParser.parse(state.spec, language: language).nodes.first { $0.title == "Billing" }!
+            let id2 = Engine.updateNode(&state, id: named.id, NodeEdit(kind: first.kind))
+            #expect(SpecParser.parse(state.spec, language: language).node(id2)?.title == "Billing")
+        }
+    }
 }

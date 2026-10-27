@@ -20,6 +20,8 @@ public enum InkCommit {
     public struct Choice: Equatable, Sendable {
         public var id: String
         public var options: [NodeKind]
+        /// Drawn without a name: once the kind is settled, the name is the next thing to ask for.
+        public var needsName = false
     }
 
     /// What a drawn shape (nil = stick figure) can become in this kind of diagram, most likely first.
@@ -117,7 +119,7 @@ public enum InkCommit {
             }
             result.created.append(.node(id))
             drawn.append((id, shape.rect))
-            if options.count > 1 { result.choices.append(Choice(id: id, options: options)) }
+            if options.count > 1 { result.choices.append(Choice(id: id, options: options, needsName: title.isEmpty)) }
             if title.isEmpty { result.untitled.append(id) }
         }
         parsed = Engine.reconcile(&state, measure: measure)

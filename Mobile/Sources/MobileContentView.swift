@@ -280,7 +280,10 @@ struct MobileContentView: View {
 
     private func beginEdit(_ ref: ElementRef) {
         switch ref {
-        case let .node(id): editText = document.parsed.node(id)?.title ?? ""
+        case let .node(id):
+            // A placeholder name ("Software System") starts empty so you can just type.
+            let n = document.parsed.node(id)
+            editText = n.map { $0.title == $0.kind.displayName || $0.title == "Person" ? "" : $0.title } ?? ""
         case let .edge(id): editText = document.parsed.edge(id)?.label ?? ""
         case let .decoration(id):
             guard let d = document.state.decorations.first(where: { $0.id == id }), d.kind != .ink else { return }

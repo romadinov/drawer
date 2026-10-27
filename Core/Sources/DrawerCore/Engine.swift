@@ -66,6 +66,12 @@ public enum Engine {
     @discardableResult
     public static func updateNode(_ state: inout DrawingState, id: String, _ edit: NodeEdit, measure: @escaping TextMeasurer = approximateMeasurer) -> String {
         var editor = SpecEditor(spec: state.spec, language: state.language)
+        var edit = edit
+        // A placeholder name ("Use Case") follows a change of kind ("Cloud") instead of contradicting it.
+        if let kind = edit.kind, edit.title == nil, let node = editor.parsed.node(id), node.kind != kind,
+           node.title == node.kind.displayName || (node.title == "Person" && [.actor, .person, .personExt].contains(node.kind)) {
+            edit.title = kind.displayName
+        }
         let newID = editor.update(node: id, edit)
         state.spec = editor.spec
         if newID != id { migrateID(&state, from: id, to: newID) }

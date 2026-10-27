@@ -45,8 +45,16 @@ final class WalkthroughTests: XCTestCase {
         let system = app.buttons.containing(NSPredicate(format: "label CONTAINS 'Software System'")).firstMatch
         XCTAssertTrue(system.waitForExistence(timeout: 5), "type question didn't appear")
         system.tap()
+        // Choosing the type goes straight on to naming it; the placeholder follows the type.
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 5), "no rename after choosing the type")
+        let field = alert.textFields.firstMatch
+        shot("4-picked-system-renaming")
+        field.typeText("Billing")
+        alert.buttons["OK"].tap()
         sleep(1)
-        shot("4-picked-system")
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Billing'")).firstMatch.waitForExistence(timeout: 3))
+        shot("4b-named")
 
         // A connector that starts and ends on the same block opens rename.
         drag(app, [CGVector(dx: 0.45, dy: 0.34), CGVector(dx: 0.5, dy: 0.38)])
