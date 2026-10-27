@@ -28,7 +28,9 @@ final class WalkthroughTests: XCTestCase {
         app.launch()
         let create = app.buttons["Create Document"]
         XCTAssertTrue(create.waitForExistence(timeout: 10))
+        sleep(2) // the browser ignores taps while it's still loading
         create.tap()
+        if !app.staticTexts["New Diagram"].waitForExistence(timeout: 8), create.exists { create.tap() }
         let opened = app.staticTexts["New Diagram"].waitForExistence(timeout: 40)
         if !opened { shot("0-not-opened"); print(app.debugDescription) }
         XCTAssertTrue(opened)
@@ -81,5 +83,24 @@ final class WalkthroughTests: XCTestCase {
         suggestion.tap()
         sleep(1)
         shot("8-completed")
+
+        // Close and reopen it: a saved diagram must open as it was, without asking for a type.
+        sleep(2)
+        let title = app.navigationBars.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Untitled'")).firstMatch.label.components(separatedBy: ",")[0]
+        app.navigationBars.buttons.firstMatch.tap()
+        sleep(2)
+        var cell = app.cells.containing(NSPredicate(format: "label CONTAINS %@", title + ".drawer")).firstMatch
+        if !cell.waitForExistence(timeout: 5) {
+            app.buttons["Browse"].firstMatch.tap()   // edited documents may not be listed under Recent
+            sleep(2)
+            cell = app.cells.containing(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+        }
+        shot("9-browser")
+        XCTAssertTrue(cell.waitForExistence(timeout: 10), "couldn't find \(title)")
+        cell.tap()
+        sleep(3)
+        shot("10-reopened")
+        XCTAssertFalse(app.staticTexts["New Diagram"].exists, "asked for a diagram type when reopening")
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Billing'")).firstMatch.exists, "the drawing wasn't saved")
     }
 }

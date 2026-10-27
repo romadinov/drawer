@@ -67,8 +67,9 @@ final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
     var onZoomChange: (CGFloat) -> Void = { _ in }
     var lastFitRequest = 0
 
-    private(set) var zoom: CGFloat = 1
-    private var pan = CGPoint(x: 0, y: 0)
+    // The inline title editor is a subview in view coordinates, so it has to follow every zoom and pan.
+    private(set) var zoom: CGFloat = 1 { didSet { repositionInlineEditor() } }
+    private var pan = CGPoint(x: 0, y: 0) { didSet { repositionInlineEditor() } }
     private var didInitialFit = false
 
     private enum Interaction {
@@ -900,6 +901,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
             font = .systemFont(ofSize: d.fontSize)
         }
         let field = NSTextField(string: text)
+        inlineFont = font
         field.font = NSFont(descriptor: font.fontDescriptor, size: font.pointSize * zoom)
         field.alignment = {
             if case .decoration = ref { return .left }
@@ -927,9 +929,12 @@ final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
 
     private var inlineRect: CGRect = .zero
 
+    private var inlineFont: NSFont?
+
     private func repositionInlineEditor() {
         guard let field = inlineEditor else { return }
         field.frame = toView(inlineRect)
+        if let f = inlineFont { field.font = NSFont(descriptor: f.fontDescriptor, size: f.pointSize * zoom) }
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {

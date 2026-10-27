@@ -58,6 +58,43 @@ struct NewDiagramView: View {
     }
 }
 
+/// The New Diagram chooser shown on the canvas of a new, empty document. It's part of the view rather than
+/// a sheet so it can't be lost while the document is still opening, and it goes away by itself if an
+/// opened file's contents arrive after all.
+struct NewDiagramCard: View {
+    @Bindable var document: DrawerDocument
+    var onCreate: () -> Void = {}
+    @State private var settled = false
+    @State private var dismissed = false
+
+    var body: some View {
+        ZStack {
+            if settled && !dismissed && document.isNewAndEmpty {
+                Color.black.opacity(0.08).ignoresSafeArea()
+                ScrollView {
+                    NewDiagramView { spec, language in
+                        document.start(spec: spec, language: language)
+                        onCreate()
+                    } onCancel: { dismissed = true }
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .frame(maxWidth: 660, maxHeight: 640)
+                .fixedSize(horizontal: false, vertical: true)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+                .shadow(color: .black.opacity(0.18), radius: 24, y: 8)
+                .padding(24)
+                .transition(.scale(scale: 0.96).combined(with: .opacity))
+            }
+        }
+        .animation(.snappy, value: settled && !dismissed && document.isNewAndEmpty)
+        .task {
+            // Give an opened file a moment to arrive so its document doesn't flash the chooser.
+            try? await Task.sleep(for: .milliseconds(500))
+            settled = true
+        }
+    }
+}
+
 extension DrawerDocument {
     /// Replaces the spec with a new starting point, keeping free-form annotations.
     @MainActor

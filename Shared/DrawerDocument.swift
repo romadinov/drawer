@@ -27,6 +27,9 @@ final class DrawerDocument: Document {
     private(set) var parsed: ParsedDiagram = .empty
     /// Bumped on every change so AppKit views know to redraw.
     private(set) var revision = 0
+    /// True once a non-empty diagram was read from a file. An opened document starts out empty and is
+    /// filled in asynchronously (a new one may get an empty snapshot), so "empty" alone doesn't mean "new".
+    private(set) var hasLoadedFile = false
 
     var selection: Set<ElementRef> = []
     var selectionOrigin: SelectionOrigin = .canvas
@@ -67,8 +70,12 @@ final class DrawerDocument: Document {
         var s = snapshot.state
         parsed = Engine.reconcile(&s, measure: appMeasurer)
         state = s
+        if !isEmpty { hasLoadedFile = true }
         revision += 1
     }
+
+    /// A new document with nothing in it yet (an opened one is filled in shortly after it appears).
+    var isNewAndEmpty: Bool { !hasLoadedFile && isEmpty }
 
     func writer(configuration: sending WriteConfiguration) -> sending FileWrapperDocumentWriter<DrawerSnapshot> {
         FileWrapperDocumentWriter(configuration) { snapshot, _ in
@@ -82,7 +89,7 @@ final class DrawerDocument: Document {
     @MainActor
     func snapshot(contentType: UTType) async throws -> sending DrawerSnapshot {
         // Images have to be drawn on the main actor (AppKit/UIKit text drawing); plain diagrams are just encoded later.
-        DrawerSnapshot(state: state, image: DiagramExport.fileContents(state, as: contentType))
+        return DrawerSnapshot(state: state, image: DiagramExport.fileContents(state, as: contentType))
     }
 
     // MARK: Changes (all undoable)

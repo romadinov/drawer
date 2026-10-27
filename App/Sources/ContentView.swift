@@ -25,6 +25,7 @@ struct ContentView: View {
                 .frame(minWidth: 400)
                 .overlay(alignment: .bottomTrailing) { zoomControls.padding(10) }
                 .overlay(alignment: .top) { VoiceOverlay(voice: voice).allowsHitTesting(voice.isListening) }
+                .overlay { NewDiagramCard(document: document) { fitSoon() } }
             if showInspector {
                 InspectorView(document: document)
                     .frame(minWidth: 230, idealWidth: 260, maxWidth: 360)
@@ -57,7 +58,6 @@ struct ContentView: View {
                 }
             }
             document.undoManager = undoManager
-            if document.isEmpty { showNewDiagram = true }
         }
         .focusedSceneValue(\.drawerDocument, document)
     }

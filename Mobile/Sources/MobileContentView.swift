@@ -31,6 +31,7 @@ struct MobileContentView: View {
                 .ignoresSafeArea(edges: .bottom)
                 .overlay(alignment: .leading) { palette.padding(.leading, 12) }
                 .overlay(alignment: .top) { VoiceOverlay(voice: voice).allowsHitTesting(voice.isListening) }
+                .overlay { NewDiagramCard(document: document) { tool = .draw; fitSoon() } }
         }
         .toolbar { toolbar }
         .toolbarRole(.editor)
@@ -80,7 +81,6 @@ struct MobileContentView: View {
                 }
             }
             document.undoManager = undoManager
-            if document.isEmpty { showNewDiagram = true }
         }
         .onChange(of: undoManager) { document.undoManager = undoManager }
         .onChange(of: document.pendingInlineEdit) {
