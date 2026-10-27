@@ -43,6 +43,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Drawer turns spoken commands such as “add a database called Orders” into diagram changes.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Drawer listens for spoken diagram commands while the microphone button is on.</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

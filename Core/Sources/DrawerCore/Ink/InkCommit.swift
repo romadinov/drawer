@@ -11,6 +11,8 @@ public enum InkCommit {
         public var untitled: [String] = []
         /// Elements whose kind was a guess between several options.
         public var choices: [Choice] = []
+        /// A connector was drawn from an element back onto itself: the user wants to edit that element.
+        public var edit: String?
         public init() {}
     }
 
@@ -127,6 +129,10 @@ public enum InkCommit {
             func endpoint(_ p: Point) -> String? {
                 node(at: p, parsed: parsed, geometry: geometry)
                     ?? drawn.filter { $0.rect.insetBy(-22).contains(p) && parsed.node($0.id) != nil }.min { area($0.rect) < area($1.rect) }?.id
+            }
+            if let a = endpoint(c.from), a == endpoint(c.to), parsed.family != .sequence, !parsed.node(a)!.kind.isGroup {
+                result.edit = a
+                continue
             }
             guard var from = endpoint(c.from), var to = endpoint(c.to),
                   from != to || parsed.family == .sequence else {

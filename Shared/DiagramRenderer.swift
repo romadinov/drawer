@@ -13,10 +13,20 @@ struct DiagramRenderer {
     var selection: Set<ElementRef> = []
     var highlighted: String?
 
-    init(parsed: ParsedDiagram, state: DrawingState, selection: Set<ElementRef> = [], highlighted: String? = nil) {
+    /// - Parameter editing: an element whose text is being edited in place; its old text isn't drawn
+    ///   (sizes and positions stay as they are) so only the editor shows.
+    init(parsed: ParsedDiagram, state: DrawingState, selection: Set<ElementRef> = [], highlighted: String? = nil, editing: ElementRef? = nil) {
+        geometry = DiagramGeometry(parsed: parsed, state: state, measure: appMeasurer)
+        var parsed = parsed
+        var state = state
+        switch editing {
+        case let .node(id): if let i = parsed.nodes.firstIndex(where: { $0.id == id }) { parsed.nodes[i].title = "" }
+        case let .edge(id): if let i = parsed.edges.firstIndex(where: { $0.id == id }) { parsed.edges[i].label = nil; parsed.edges[i].technology = nil }
+        case let .decoration(id): if let i = state.decorations.firstIndex(where: { $0.id == id }) { state.decorations[i].text = "" }
+        case nil: break
+        }
         self.parsed = parsed
         self.state = state
-        geometry = DiagramGeometry(parsed: parsed, state: state, measure: appMeasurer)
         self.selection = selection
         self.highlighted = highlighted
     }

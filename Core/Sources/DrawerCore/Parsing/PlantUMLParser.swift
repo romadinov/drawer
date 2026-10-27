@@ -165,7 +165,7 @@ struct PlantUMLParser {
             builder.diagnostics.append(Diagnostic(line: line.number, message: "Unrecognised statement"))
         }
 
-        let family: DiagramFamily
+        var family: DiagramFamily
         if usesC4 || builder.nodes.contains(where: { $0.kind.isC4 }) {
             family = .c4
             builder.setImplicitKind(.system)
@@ -178,6 +178,12 @@ struct PlantUMLParser {
         } else {
             family = .flowchart
             builder.setImplicitKind(.component)
+        }
+        // An empty diagram has no elements to tell its type by; these (real PlantUML) directives do it instead.
+        if builder.nodes.isEmpty && !usesC4 {
+            let text = lines.map(\.trimmed)
+            if text.contains(where: { $0.hasPrefix("hide circle") }) { family = .erDiagram }
+            else if text.contains(where: { $0.range(of: #"^hide\s+(empty\s+)?(members|methods|fields|attributes)"#, options: .regularExpression) != nil }) { family = .classDiagram }
         }
         return builder.finish(family: family, direction: direction, title: title, insertionOffset: insertion)
     }

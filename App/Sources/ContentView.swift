@@ -11,6 +11,8 @@ struct ContentView: View {
     @State private var showTemplates = false
     @State private var showInspector = true
     @State private var showSpec = true
+    @State private var showNewDiagram = false
+    @State private var voice = VoiceControl()
 
     var body: some View {
         HSplitView {
@@ -18,18 +20,24 @@ struct ContentView: View {
                 specPane
                     .frame(minWidth: 260, idealWidth: 380, maxWidth: 700)
             }
-            CanvasView(document: document, revision: document.revision, selection: document.selection,
+            CanvasView(document: document, revision: document.revision, selection: document.selection, choice: document.currentChoice?.id,
                        tool: $tool, zoom: $zoom, undoManager: undoManager, fitRequest: fitRequest)
                 .frame(minWidth: 400)
                 .overlay(alignment: .bottomTrailing) { zoomControls.padding(10) }
-                .overlay(alignment: .bottom) { ChoiceBar(document: document).padding(.trailing, 90) }
-                .animation(.snappy, value: document.currentChoice)
+                .overlay(alignment: .top) { VoiceOverlay(voice: voice).allowsHitTesting(voice.isListening) }
             if showInspector {
                 InspectorView(document: document)
                     .frame(minWidth: 230, idealWidth: 260, maxWidth: 360)
             }
         }
         .toolbar { toolbarContent }
+        .sheet(isPresented: $showNewDiagram) {
+            NewDiagramView { spec, language in
+                document.start(spec: spec, language: language)
+                showNewDiagram = false
+                fitSoon()
+            } onCancel: { showNewDiagram = false }
+        }
         .sheet(isPresented: $showTemplates) {
             TemplatePicker { template in
                 document.applyTemplate(template)
@@ -38,8 +46,18 @@ struct ContentView: View {
             } onCancel: { showTemplates = false }
         }
         .onAppear {
+            voice.document = document
+            voice.onAppAction = { action in
+                switch action {
+                case .undo: undoManager?.undo()
+                case .redo: undoManager?.redo()
+                case .autoLayout: document.autoLayout(); fitSoon()
+                case .zoomToFit: fitSoon()
+                default: break
+                }
+            }
             document.undoManager = undoManager
-            if document.isEmpty { showTemplates = true }
+            if document.isEmpty { showNewDiagram = true }
         }
         .focusedSceneValue(\.drawerDocument, document)
     }
@@ -183,6 +201,11 @@ struct ContentView: View {
             .help("Drawing-only embellishments (not part of the spec)")
         }
         ToolbarItemGroup(placement: .primaryAction) {
+            Button { voice.toggle() } label: {
+                Label("Voice", systemImage: voice.isListening ? "mic.fill" : "mic")
+            }
+            .foregroundStyle(voice.isListening ? Color.red : Color.primary)
+            .help("Speak a command — “add a database called Orders”, “connect web app to orders”, “undo”…")
             Button { document.autoLayout(); fitSoon() } label: { Label("Auto Layout", systemImage: "wand.and.stars") }
                 .help("Re-arrange all elements automatically")
             Button { showTemplates = true } label: { Label("Templates", systemImage: "square.grid.2x2") }

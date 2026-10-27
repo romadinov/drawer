@@ -16,6 +16,8 @@ struct CanvasView: NSViewRepresentable {
     let document: DrawerDocument
     let revision: Int
     let selection: Set<ElementRef>
+    /// The recognised element to ask about (passed so a change reaches `updateNSView`).
+    var choice: String?
     @Binding var tool: Tool
     @Binding var zoom: CGFloat
     var undoManager: UndoManager?
@@ -43,6 +45,7 @@ struct CanvasView: NSViewRepresentable {
             v.zoomToFit()
         }
         v.needsDisplay = true
+        DispatchQueue.main.async { v.presentChoiceIfNeeded() }
         if let pending = document.pendingInlineEdit {
             document.pendingInlineEdit = nil
             DispatchQueue.main.async { v.beginInlineEdit(pending) }
@@ -50,7 +53,7 @@ struct CanvasView: NSViewRepresentable {
     }
 }
 
-final class CanvasNSView: NSView, NSTextFieldDelegate {
+final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
     weak var document: DrawerDocument?
     var tool: Tool = .select {
         didSet {
@@ -86,7 +89,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
     private var hoverTarget: String?
     private var spaceDown = false
     private var inlineEditor: NSTextField?
-    private var inlineTarget: ElementRef?
+    private var inlineTarget: ElementRef? { didSet { needsDisplay = true } }
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -192,7 +195,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
         ctx.translateBy(x: pan.x, y: pan.y)
         ctx.scaleBy(x: zoom, y: zoom)
         let state = previewState(doc)
-        let renderer = DiagramRenderer(parsed: doc.parsed, state: state, selection: doc.selection, highlighted: hoverTarget)
+        let renderer = DiagramRenderer(parsed: doc.parsed, state: state, selection: doc.selection, highlighted: hoverTarget, editing: inlineTarget)
         renderer.draw()
         drawSelectionHandles(doc, renderer: renderer)
         switch interaction {
@@ -469,6 +472,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
     }
 
     private var didDrag = false
+    private var connectLeftOrigin = false
     private var connectStartY: CGFloat = 0
     private var isSequence: Bool { document?.parsed.family == .sequence }
 
@@ -526,7 +530,9 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
             interaction = .spacing(edge: edge, start: start, original: original, current: v)
         case let .connecting(from, _):
             interaction = .connecting(from: from, current: v)
-            if case let .node(id)? = hitTest(toDiagram(v), doc: doc), id != from || isSequence { hoverTarget = id } else { hoverTarget = nil }
+            let over: String? = if case let .node(id)? = hitTest(toDiagram(v), doc: doc) { id } else { nil }
+            if over != from { connectLeftOrigin = true }
+            if let over, over != from || isSequence { hoverTarget = over } else { hoverTarget = nil }
         case let .creating(kind, start, _):
             interaction = .creating(kind: kind, start: start, current: toDiagram(v))
         case let .panning(startPan, start):
@@ -558,7 +564,14 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
             // A plain click on an edge only selects it; a drag bends it.
             if didDrag { doc.change("Bend Connection") { state, _ in state = preview } }
         case let .connecting(from, _):
-            if case let .node(to)? = hitTest(toDiagram(v), doc: doc), to != from || isSequence {
+            let target: String? = if case let .node(to)? = hitTest(toDiagram(v), doc: doc) { to } else { nil }
+            defer { connectLeftOrigin = false }
+            if target == from && (!isSequence || !connectLeftOrigin) {
+                // Let go on the block it started from: that's not a connection, edit the block instead.
+                if case .connect = tool, !event.modifierFlags.contains(.option) { onToolReset() }
+                select([.node(from)])
+                DispatchQueue.main.async { self.beginInlineEdit(.node(from)) }
+            } else if case let .node(to)? = hitTest(toDiagram(v), doc: doc), to != from || isSequence {
                 doc.connect(from, to, before: isSequence ? messageBelow(connectStartY, doc: doc) : nil)
                 if case .connect = tool, !event.modifierFlags.contains(.option) { onToolReset() }
             }
@@ -707,6 +720,39 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
         doc.selectionOrigin = .canvas
         doc.selection = s
         needsDisplay = true
+    }
+
+    // MARK: Recognition question
+
+    private var choicePopover: NSPopover?
+    private var shownChoice: String?
+
+    /// Pops up "What is this?" next to a recognised element whose kind was a guess.
+    func presentChoiceIfNeeded() {
+        guard let doc = document else { return }
+        let current = doc.currentChoice?.id
+        guard current != shownChoice else { return }
+        shownChoice = current
+        choicePopover?.delegate = nil
+        choicePopover?.close()
+        choicePopover = nil
+        guard let id = current, window != nil, let f = currentGeometry(doc).frames[id] else { return }
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(rootView: ChoicePrompt(document: doc))
+        popover.delegate = self
+        popover.show(relativeTo: toView(CGRect(f)), of: self, preferredEdge: .maxX)
+        choicePopover = popover
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        // Closed by clicking elsewhere: keep the guess and ask about the next one, if any.
+        choicePopover = nil
+        if let doc = document, doc.currentChoice?.id == shownChoice {
+            shownChoice = nil
+            doc.skipChoice()
+        }
+        presentChoiceIfNeeded()
     }
 
     // MARK: Context menu

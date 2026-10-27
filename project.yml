@@ -51,3 +51,21 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: SZVSSCJQFN
+    scheme:
+      testTargets:
+        - DrawerMobileUITests
+  DrawerMobileUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Mobile/UITests
+    dependencies:
+      - target: DrawerMobile
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.romadinov.drawer.mobile.uitests
+        TEST_TARGET_NAME: DrawerMobile
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: SZVSSCJQFN

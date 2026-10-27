@@ -16,10 +16,15 @@
 		233ED5ECB7A5CAF2AE4CE95D /* ChoiceBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B46F880920F85E8264F568 /* ChoiceBar.swift */; };
 		34660205AD212750D07244C5 /* DrawerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */; };
 		55F195C377957269384A7F58 /* DiagramExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 068783494CEDC1AF2E1E13A1 /* DiagramExport.swift */; };
+		5C80FDACC497E3D2E083F917 /* NewDiagramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B448B73A32D767AAFDF39830 /* NewDiagramView.swift */; };
+		5ECCB63572FF9F665ACE63C6 /* NewDiagramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B448B73A32D767AAFDF39830 /* NewDiagramView.swift */; };
 		5F5C634203C277DFAC30FE23 /* ChoiceBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B46F880920F85E8264F568 /* ChoiceBar.swift */; };
+		648CD133A6C813A84EBCE655 /* VoiceControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE08C2AC85C3963934CE361B /* VoiceControl.swift */; };
+		6A23D60F437D5EA08ACB892C /* WalkthroughTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0E1143C0E9AE7E9681429E /* WalkthroughTests.swift */; };
 		7A946A75CE3FDADFA4E10B0E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64759786F7ACF28092EB2F3B /* Theme.swift */; };
 		800AA7D376DE6D798A4A01AD /* DrawerDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10B05957B75E9638F894CC8 /* DrawerDocument.swift */; };
 		83981ECD6AD4AE2433C819D7 /* MobileContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4249BBACA5774D4ACA0E4DC8 /* MobileContentView.swift */; };
+		8928EA4D72DE207780299D39 /* VoiceControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE08C2AC85C3963934CE361B /* VoiceControl.swift */; };
 		8A0A03AD006D9ADB810433B1 /* DiagramRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187F7873D595746A0A428BDC /* DiagramRenderer.swift */; };
 		8E84A8BAF32483167EC710D5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 189AE165591E3831F2CA7C9B /* Assets.xcassets */; };
 		92D2023A0BF5CB5E74D000F6 /* DrawerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0CD1AAD2B5FC40108B191679 /* DrawerCore */; };
@@ -35,6 +40,16 @@
 		C99FC8AAE7271BCE6F5CBD84 /* SVGSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72BAAB3A390532F069E573B /* SVGSurface.swift */; };
 		FC382F09AFF95A28D0F7AA0E /* SpecEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A040740E0A59F71F43DEB54 /* SpecEditorView.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		911AA1DA5D7ADC2A496F410A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E30AD08EA2D8D2F3C45E0E49 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 60DAE40EC3A1F79561CAB8AD;
+			remoteInfo = DrawerMobile;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		068783494CEDC1AF2E1E13A1 /* DiagramExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramExport.swift; sourceTree = "<group>"; };
@@ -52,9 +67,13 @@
 		A10B05957B75E9638F894CC8 /* DrawerDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawerDocument.swift; sourceTree = "<group>"; };
 		A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawerApp.swift; sourceTree = "<group>"; };
 		AE1945B4599304CD7AB95D82 /* Drawer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Drawer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0C7408D40F97EB3D6DCEFD2 /* DrawerMobileUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DrawerMobileUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B448B73A32D767AAFDF39830 /* NewDiagramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewDiagramView.swift; sourceTree = "<group>"; };
+		BE08C2AC85C3963934CE361B /* VoiceControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceControl.swift; sourceTree = "<group>"; };
 		BF3D9B8F9ABAB11A3589E6E3 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		C12183073679CCAAAE7E0967 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C4B46F880920F85E8264F568 /* ChoiceBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoiceBar.swift; sourceTree = "<group>"; };
+		CC0E1143C0E9AE7E9681429E /* WalkthroughTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkthroughTests.swift; sourceTree = "<group>"; };
 		D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandwritingReader.swift; sourceTree = "<group>"; };
 		E589DE6E6D6A894C7C5F3D08 /* Exporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exporter.swift; sourceTree = "<group>"; };
 		F72BAAB3A390532F069E573B /* SVGSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGSurface.swift; sourceTree = "<group>"; };
@@ -80,6 +99,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1CD3AED49228DDBB2D0C8B37 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				CC0E1143C0E9AE7E9681429E /* WalkthroughTests.swift */,
+			);
+			name = UITests;
+			path = Mobile/UITests;
+			sourceTree = "<group>";
+		};
 		29E699120C29E75BA22DC53A = {
 			isa = PBXGroup;
 			children = (
@@ -89,6 +117,7 @@
 				5C488A6008CDD513F292B710 /* Shared */,
 				3B38C5F9B19E195D6A0CE143 /* Sources */,
 				EE5C37CDCEA2660C09C08718 /* Sources */,
+				1CD3AED49228DDBB2D0C8B37 /* UITests */,
 				4B40FAA91FBA611313C0CE7F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +141,7 @@
 			children = (
 				AE1945B4599304CD7AB95D82 /* Drawer.app */,
 				2F5A8AA5167E216FBCD2B5A5 /* DrawerMobile.app */,
+				B0C7408D40F97EB3D6DCEFD2 /* DrawerMobileUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -132,8 +162,10 @@
 				187F7873D595746A0A428BDC /* DiagramRenderer.swift */,
 				A10B05957B75E9638F894CC8 /* DrawerDocument.swift */,
 				D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */,
+				B448B73A32D767AAFDF39830 /* NewDiagramView.swift */,
 				F72BAAB3A390532F069E573B /* SVGSurface.swift */,
 				64759786F7ACF28092EB2F3B /* Theme.swift */,
+				BE08C2AC85C3963934CE361B /* VoiceControl.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -198,6 +230,24 @@
 			productReference = 2F5A8AA5167E216FBCD2B5A5 /* DrawerMobile.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BA62595FE0FEB27E032446FB /* DrawerMobileUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 780F8ABC95865036065E52B1 /* Build configuration list for PBXNativeTarget "DrawerMobileUITests" */;
+			buildPhases = (
+				07B14BF9D3FFC1F86978894D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D75E12911B86E4581622AD27 /* PBXTargetDependency */,
+			);
+			name = DrawerMobileUITests;
+			packageProductDependencies = (
+			);
+			productName = DrawerMobileUITests;
+			productReference = B0C7408D40F97EB3D6DCEFD2 /* DrawerMobileUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		DF66964A53068F68040C5468 /* Drawer */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A9C9F304F3A87C56B7678960 /* Build configuration list for PBXNativeTarget "Drawer" */;
@@ -231,6 +281,11 @@
 						DevelopmentTeam = SZVSSCJQFN;
 						ProvisioningStyle = Automatic;
 					};
+					BA62595FE0FEB27E032446FB = {
+						DevelopmentTeam = SZVSSCJQFN;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 60DAE40EC3A1F79561CAB8AD;
+					};
 					DF66964A53068F68040C5468 = {
 						ProvisioningStyle = Manual;
 					};
@@ -255,6 +310,7 @@
 			targets = (
 				DF66964A53068F68040C5468 /* Drawer */,
 				60DAE40EC3A1F79561CAB8AD /* DrawerMobile */,
+				BA62595FE0FEB27E032446FB /* DrawerMobileUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -279,6 +335,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		07B14BF9D3FFC1F86978894D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6A23D60F437D5EA08ACB892C /* WalkthroughTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		186E6BE008AC23D43D08DF8B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -293,9 +357,11 @@
 				A3F3858CC381B89AABBA3F8C /* Exporter.swift in Sources */,
 				BA183A70B551DE4A6287DA4C /* HandwritingReader.swift in Sources */,
 				C6D08BA0A760D33D10C14108 /* InspectorView.swift in Sources */,
+				5C80FDACC497E3D2E083F917 /* NewDiagramView.swift in Sources */,
 				C99FC8AAE7271BCE6F5CBD84 /* SVGSurface.swift in Sources */,
 				FC382F09AFF95A28D0F7AA0E /* SpecEditorView.swift in Sources */,
 				951CA128F320FEEBF3CD6D6A /* Theme.swift in Sources */,
+				648CD133A6C813A84EBCE655 /* VoiceControl.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -311,14 +377,43 @@
 				06E66AC5E1C0EB711252EA65 /* MobileApp.swift in Sources */,
 				A699D0907200A2D91D0BD94B /* MobileCanvasView.swift in Sources */,
 				83981ECD6AD4AE2433C819D7 /* MobileContentView.swift in Sources */,
+				5ECCB63572FF9F665ACE63C6 /* NewDiagramView.swift in Sources */,
 				1B80802527E11ED080477FB7 /* SVGSurface.swift in Sources */,
 				7A946A75CE3FDADFA4E10B0E /* Theme.swift in Sources */,
+				8928EA4D72DE207780299D39 /* VoiceControl.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		D75E12911B86E4581622AD27 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 60DAE40EC3A1F79561CAB8AD /* DrawerMobile */;
+			targetProxy = 911AA1DA5D7ADC2A496F410A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		2AD4939AFC6002FC99A97585 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = SZVSSCJQFN;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.romadinov.drawer.mobile.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DrawerMobile;
+			};
+			name = Release;
+		};
 		597454ACB24BA112FE87C8C5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -467,6 +562,25 @@
 			};
 			name = Debug;
 		};
+		C1CD3CB7CF4E7E779366C70E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = SZVSSCJQFN;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.romadinov.drawer.mobile.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DrawerMobile;
+			};
+			name = Debug;
+		};
 		C4D4561B7E6FBB1018031700 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -532,6 +646,15 @@
 			buildConfigurations = (
 				919075A84E775BE84B3C850E /* Debug */,
 				787675387F0FBFBE55F25E00 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		780F8ABC95865036065E52B1 /* Build configuration list for PBXNativeTarget "DrawerMobileUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1CD3CB7CF4E7E779366C70E /* Debug */,
+				2AD4939AFC6002FC99A97585 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

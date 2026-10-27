@@ -11,8 +11,17 @@ struct SpecEditorView: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scroll = NSTextView.scrollableTextView()
-        let tv = scroll.documentView as! NSTextView
+        let scroll = NSScrollView()
+        scroll.hasVerticalScroller = true
+        scroll.borderType = .noBorder
+        let tv = SpecTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+        tv.autoresizingMask = [.width]
+        tv.isVerticallyResizable = true
+        tv.isHorizontallyResizable = false
+        tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        tv.textContainer?.widthTracksTextView = true
+        scroll.documentView = tv
+        tv.language = document.state.language
         tv.font = .monospacedSystemFont(ofSize: 12.5, weight: .regular)
         tv.isAutomaticQuoteSubstitutionEnabled = false
         tv.isAutomaticDashSubstitutionEnabled = false
@@ -39,6 +48,7 @@ struct SpecEditorView: NSViewRepresentable {
         let c = context.coordinator
         c.document = document
         guard let tv = c.textView else { return }
+        (tv as? SpecTextView)?.language = document.state.language
         if tv.string != document.state.spec {
             c.applyExternalText(document.state.spec)
         }
@@ -50,12 +60,24 @@ struct SpecEditorView: NSViewRepresentable {
         weak var textView: NSTextView?
         weak var document: DrawerDocument?
         private var applyingExternal = false
+        private var lastTyped = ""
         private var lastShownSelection: Set<ElementRef> = []
+
+        func textView(_ textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString: String?) -> Bool {
+            lastTyped = replacementString ?? ""
+            return true
+        }
 
         func textDidChange(_ notification: Notification) {
             guard !applyingExternal, let tv = textView else { return }
             highlight()
             document?.specTextChanged(tv.string)
+            // Offer completions while typing a word or an arrow (not while deleting or pasting).
+            if let stv = tv as? SpecTextView, !stv.insertingCompletion, lastTyped.count == 1,
+               lastTyped.unicodeScalars.allSatisfy({ CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-.<|>*")).contains($0) }) {
+                lastTyped = ""
+                DispatchQueue.main.async { stv.suggestIfUseful() }
+            }
         }
 
         /// Replace only the changed middle part so the caret and scroll position survive.
@@ -165,5 +187,40 @@ struct SpecEditorView: NSViewRepresentable {
             }
             storage.endEditing()
         }
+    }
+}
+
+/// Completes PlantUML / Mermaid as you type: keywords, element names and arrows (see `SpecCompleter`).
+final class SpecTextView: NSTextView {
+    var language: SpecLanguage = .plantUML
+    private(set) var insertingCompletion = false
+    private var pending: SpecCompleter.Suggestions?
+
+    private func current() -> SpecCompleter.Suggestions {
+        SpecCompleter.suggestions(spec: string, language: language, cursor: selectedRange().location)
+    }
+
+    /// Shows the completion list if there is anything worth suggesting (an empty list would just beep).
+    func suggestIfUseful() {
+        guard selectedRange().length == 0, window?.firstResponder === self else { return }
+        let s = current()
+        guard !s.items.isEmpty, s.range.length > 0 else { return }
+        pending = s
+        complete(nil)
+    }
+
+    override var rangeForUserCompletion: NSRange { (pending ?? current()).range }
+
+    override func completions(forPartialWordRange charRange: NSRange, indexOfSelectedItem index: UnsafeMutablePointer<Int>) -> [String]? {
+        index.pointee = 0
+        let items = (pending ?? current()).items
+        return items.isEmpty ? nil : Array(items.prefix(30))
+    }
+
+    override func insertCompletion(_ word: String, forPartialWordRange charRange: NSRange, movement: Int, isFinal flag: Bool) {
+        insertingCompletion = true
+        defer { insertingCompletion = false }
+        super.insertCompletion(word, forPartialWordRange: charRange, movement: movement, isFinal: flag)
+        if flag { pending = nil }
     }
 }

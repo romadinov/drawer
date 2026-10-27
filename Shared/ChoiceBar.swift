@@ -1,44 +1,35 @@
 import SwiftUI
 import DrawerCore
 
-/// Asks what a just-recognised shape is when it could be several kinds of element.
-/// The best guess is already applied, so it never blocks drawing; picking another option switches it.
-struct ChoiceBar: View {
+/// Asks what a just-recognised shape is when it could be several kinds of element. Shown in a popover
+/// pointing at the element; the best guess is already applied, so carrying on drawing keeps it.
+struct ChoicePrompt: View {
     @Bindable var document: DrawerDocument
 
     var body: some View {
         if let choice = document.currentChoice, let node = document.parsed.node(choice.id) {
-            HStack(spacing: 8) {
-                Text("What is “\(node.title)”?")
-                    .font(.callout.weight(.semibold))
-                    .lineLimit(1)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(choice.options, id: \.self) { kind in
-                            Button(kind.displayName) { document.resolveChoice(kind) }
-                                .buttonStyle(.bordered)
-                                .tint(kind == node.kind ? .accentColor : nil)
-                                .fontWeight(kind == node.kind ? .semibold : .regular)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("What is “\(node.title)”?").font(.headline).padding(.bottom, 4)
+                ForEach(choice.options, id: \.self) { kind in
+                    Button { document.resolveChoice(kind) } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: kind.symbol).frame(width: 22)
+                            Text(kind.displayName)
+                            Spacer()
+                            if kind == node.kind { Image(systemName: "checkmark").foregroundStyle(.tint) }
                         }
+                        .padding(.vertical, 7)
+                        .padding(.horizontal, 8)
+                        .background(kind == node.kind ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 8))
+                        .contentShape(Rectangle())
                     }
-                }
-                .fixedSize(horizontal: false, vertical: true)
-                let remaining = document.pendingChoices.filter { document.parsed.node($0.id) != nil }.count
-                if remaining > 1 {
-                    Text("+\(remaining - 1)").font(.caption).foregroundStyle(.secondary)
-                }
-                Button { document.dismissChoices() } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .help("Keep the guesses")
+                }
+                Text("Carry on drawing to keep \(node.kind.displayName).")
+                    .font(.caption).foregroundStyle(.secondary).padding(.top, 4)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(.regularMaterial, in: Capsule())
-            .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
-            .frame(maxWidth: 720)
-            .padding(12)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .padding(14)
+            .frame(width: 270)
         }
     }
 }

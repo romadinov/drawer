@@ -232,3 +232,51 @@ public struct DiagramTemplate: Identifiable, Sendable {
                         language: .mermaid, spec: "flowchart TD\n"),
     ]
 }
+
+/// Starting points for a new document: an empty diagram of a chosen type, or that type's example.
+public enum DiagramStarter {
+    public static let families: [DiagramFamily] = [.c4, .classDiagram, .erDiagram, .sequence, .flowchart]
+
+    public static func summary(_ family: DiagramFamily) -> String {
+        switch family {
+        case .c4: "People, systems, containers and components"
+        case .classDiagram: "Classes, interfaces and their relationships"
+        case .erDiagram: "Entities, attributes and cardinality"
+        case .sequence: "Participants exchanging messages over time"
+        case .flowchart: "Boxes and arrows, components and deployment"
+        }
+    }
+
+    public static func symbol(_ family: DiagramFamily) -> String {
+        switch family {
+        case .c4: "square.stack.3d.up"
+        case .classDiagram: "rectangle.split.3x1"
+        case .erDiagram: "tablecells"
+        case .sequence: "arrow.left.arrow.right"
+        case .flowchart: "arrow.triangle.branch"
+        }
+    }
+
+    /// An empty spec that already has the right diagram type (PlantUML has no type header, so a
+    /// harmless type-specific directive marks it).
+    public static func blankSpec(_ family: DiagramFamily, language: SpecLanguage) -> String {
+        switch (language, family) {
+        case (.plantUML, .c4): "@startuml\n!include <C4/C4_Container>\n\n@enduml\n"
+        case (.plantUML, .classDiagram): "@startuml\nhide empty members\n\n@enduml\n"
+        case (.plantUML, .erDiagram): "@startuml\nhide circle\n\n@enduml\n"
+        case (.plantUML, .sequence): "@startuml\nhide footbox\n\n@enduml\n"
+        case (.plantUML, .flowchart): "@startuml\n\n@enduml\n"
+        case (.mermaid, .c4): "C4Container\n"
+        case (.mermaid, .classDiagram): "classDiagram\n"
+        case (.mermaid, .erDiagram): "erDiagram\n"
+        case (.mermaid, .sequence): "sequenceDiagram\n"
+        case (.mermaid, .flowchart): "flowchart TD\n"
+        }
+    }
+
+    /// The example for a type, in the requested language when there is one.
+    public static func example(_ family: DiagramFamily, language: SpecLanguage) -> DiagramTemplate? {
+        let matching = DiagramTemplate.all.filter { SpecParser.parse($0.spec, language: $0.language).family == family && !$0.name.hasPrefix("Blank") }
+        return matching.first { $0.language == language } ?? matching.first
+    }
+}

@@ -256,7 +256,7 @@ struct SequenceParser {
     /// has `A -> B` style messages and no structural declarations (PlantUML's own default).
     static func looksLikePlantUMLSequence(_ lines: [SourceLine]) -> Bool {
         let structural = NSRegularExpression(#"^\s*(class|interface|enum|abstract|entity\s+\w+\s*\{|component|usecase|package|namespace|node|rectangle|folder|frame|cloud|artifact|object|map|state|start|:.*;|\[.*\]|\(.*\)|Person|System|Container|Component|Rel)\b"#)
-        let sequenceOnly = NSRegularExpression(#"^\s*(participant\b|activate\b|deactivate\b|autonumber\b|return\b|alt\b|loop\b|opt\b|par\b|critical\b|break\b|group\b|else\b|ref\s+over|[hr]?note\s+over|==.*==|\.\.\.|\|\|\|)"#)
+        let sequenceOnly = NSRegularExpression(#"^\s*(participant\b|activate\b|deactivate\b|autonumber\b|return\b|alt\b|loop\b|opt\b|par\b|critical\b|break\b|group\b|else\b|ref\s+over|[hr]?note\s+over|==.*==|\.\.\.|\|\|\||hide\s+footbox)"#)
         let message = NSRegularExpression(#"^\s*("[^"]+"|[\w.]+)\s*<?-{1,2}(?:\[[^\]]*\])?>{1,2}[ox]?\s*("[^"]+"|[\w.]+)"#)
         var messages = 0
         for line in lines {

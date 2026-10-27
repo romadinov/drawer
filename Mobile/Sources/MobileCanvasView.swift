@@ -16,6 +16,8 @@ struct MobileCanvas: UIViewRepresentable {
     let document: DrawerDocument
     let revision: Int
     let selection: Set<ElementRef>
+    var choice: String?
+    var editing: ElementRef?
     var tool: MobileTool
     var handle: CanvasHandle
     var onEdit: (ElementRef) -> Void
@@ -34,15 +36,17 @@ struct MobileCanvas: UIViewRepresentable {
         v.tool = tool
         v.onEdit = onEdit
         v.onToolChange = onToolChange
+        v.editing = editing
         handle.view = v
         v.setNeedsDisplay()
+        DispatchQueue.main.async { v.presentChoiceIfNeeded() }
     }
 }
 
 /// Finger: tap to select, drag to move (or pan on empty space), two fingers to pan and pinch to zoom.
 /// Apple Pencil draws (or erases in Erase mode). A finger draws in Draw mode only until the Pencil is used,
 /// or never if "Only Draw with Apple Pencil" is on, so a resting palm can't scribble.
-final class CanvasUIView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
+final class CanvasUIView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate, UIPopoverPresentationControllerDelegate {
     weak var document: DrawerDocument?
     let ink = InkSession()
     var tool: MobileTool = .select {
@@ -55,6 +59,8 @@ final class CanvasUIView: UIView, UIGestureRecognizerDelegate, UIPencilInteracti
     }
     var onEdit: (ElementRef) -> Void = { _ in }
     var onToolChange: (MobileTool) -> Void = { _ in }
+    /// Element being renamed: its old text isn't drawn underneath the rename field.
+    var editing: ElementRef?
     private var previousTool: MobileTool = .select
     private var sawPencil = false { didSet { if sawPencil != oldValue { updateGestures() } } }
     /// Fingers never draw or erase once a Pencil is in use.
@@ -153,7 +159,7 @@ final class CanvasUIView: UIView, UIGestureRecognizerDelegate, UIPencilInteracti
         ctx.saveGState()
         ctx.translateBy(x: pan.x, y: pan.y)
         ctx.scaleBy(x: zoom, y: zoom)
-        DiagramRenderer(parsed: doc.parsed, state: previewState(doc), selection: erasing.isEmpty ? doc.selection : erasing).draw()
+        DiagramRenderer(parsed: doc.parsed, state: previewState(doc), selection: erasing.isEmpty ? doc.selection : erasing, editing: editing).draw()
         if !ink.isEmpty { DiagramRenderer.strokeInk(ink.pending, color: NodePalette.selection, width: 2.2) }
         if let e = eraserAt {
             let r: CGFloat = 12 / zoom
@@ -298,6 +304,44 @@ final class CanvasUIView: UIView, UIGestureRecognizerDelegate, UIPencilInteracti
         g.scale = 1
         pan = CGPoint(x: loc.x - anchor.x * zoom, y: loc.y - anchor.y * zoom)
         setNeedsDisplay()
+    }
+
+    // MARK: Recognition question
+
+    private weak var choiceController: UIViewController?
+    private var shownChoice: String?
+
+    /// Pops up "What is this?" next to a recognised element whose kind was a guess.
+    func presentChoiceIfNeeded() {
+        guard let doc = document else { return }
+        let current = doc.currentChoice?.id
+        guard current != shownChoice else { return }
+        shownChoice = current
+        if let old = choiceController { old.popoverPresentationController?.delegate = nil; old.dismiss(animated: false) }
+        guard let id = current, window != nil, let f = DiagramGeometry(parsed: doc.parsed, state: doc.state, measure: appMeasurer).frames[id],
+              var presenter = window?.rootViewController else { return }
+        while let next = presenter.presentedViewController, !next.isBeingDismissed { presenter = next }
+        let vc = UIHostingController(rootView: ChoicePrompt(document: doc))
+        vc.modalPresentationStyle = .popover
+        vc.preferredContentSize = vc.sizeThatFits(in: CGSize(width: 270, height: 600))
+        let r = CGRect(f)
+        vc.popoverPresentationController?.sourceView = self
+        vc.popoverPresentationController?.sourceRect = CGRect(x: r.minX * zoom + pan.x, y: r.minY * zoom + pan.y, width: r.width * zoom, height: r.height * zoom)
+        vc.popoverPresentationController?.delegate = self
+        vc.popoverPresentationController?.passthroughViews = [self]
+        presenter.present(vc, animated: true)
+        choiceController = vc
+    }
+
+    func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle { .none }
+
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        // Dismissed by tapping elsewhere: keep the guess and ask about the next one, if any.
+        if let doc = document, doc.currentChoice?.id == shownChoice {
+            shownChoice = nil
+            doc.skipChoice()
+        }
+        presentChoiceIfNeeded()
     }
 
     // MARK: Hit testing

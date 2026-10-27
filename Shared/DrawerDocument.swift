@@ -226,7 +226,10 @@ final class DrawerDocument: Document {
         var result = InkCommit.Result()
         change("Draw") { state, _ in result = InkCommit.apply(items, to: &state, measure: appMeasurer) }
         pendingChoices = result.choices + pendingChoices
-        if let c = currentChoice {
+        if let id = result.edit {
+            selection = [.node(id)]
+            pendingInlineEdit = .node(id)
+        } else if let c = currentChoice {
             selection = [.node(c.id)]
             selectionOrigin = .canvas
         }
@@ -241,6 +244,14 @@ final class DrawerDocument: Document {
         guard let c = currentChoice else { return }
         pendingChoices.removeAll { $0.id == c.id }
         if parsed.node(c.id)?.kind != kind { updateNode(c.id, NodeEdit(kind: kind)) }
+        if let next = currentChoice { selection = [.node(next.id)] }
+    }
+
+    /// Keeps the guess for the element being asked about and moves on to the next.
+    @MainActor
+    func skipChoice() {
+        guard let c = currentChoice else { return }
+        pendingChoices.removeAll { $0.id == c.id }
         if let next = currentChoice { selection = [.node(next.id)] }
     }
 

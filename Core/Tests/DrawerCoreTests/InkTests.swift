@@ -225,4 +225,22 @@ extension Pen {
         var er = DrawingState(language: .mermaid, spec: "erDiagram\n  A {\n    int id\n  }\n")
         #expect(InkCommit.apply([.shape(.rectangle, Rect(x: 400, y: 300, width: 160, height: 80))], to: &er).choices.isEmpty)
     }
+
+    @Test func blankStartersHaveTheirType() {
+        for language in SpecLanguage.allCases {
+            for family in DiagramStarter.families {
+                let spec = DiagramStarter.blankSpec(family, language: language)
+                let parsed = SpecParser.parse(spec, language: language)
+                #expect(parsed.family == family, "\(language) \(family)")
+                #expect(parsed.diagnostics.isEmpty, "\(language) \(family) \(parsed.diagnostics)")
+                #expect(DiagramStarter.example(family, language: language) != nil)
+                // Drawing a box gives that type's main element, and the type sticks.
+                var state = DrawingState(language: language, spec: spec)
+                InkCommit.apply([.shape(.rectangle, Rect(x: 0, y: 0, width: 160, height: 80))], to: &state)
+                let after = SpecParser.parse(state.spec, language: language)
+                #expect(after.family == family, "\(language) \(family): \(state.spec)")
+                #expect(after.nodes.count == 1 && after.diagnostics.isEmpty, "\(language) \(family): \(state.spec) \(after.diagnostics)")
+            }
+        }
+    }
 }
