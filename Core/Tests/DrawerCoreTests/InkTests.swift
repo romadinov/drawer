@@ -43,11 +43,24 @@ enum Pen {
     }
 }
 
+extension Pen {
+    /// Traced from a real drawing: arms as one "^" stroke, spine and legs as another, no head.
+    static func stickFigure(dx: Double = 0, dy: Double = 0) -> [InkStroke] {
+        func t(_ pts: [(Double, Double)]) -> [Point] { pts.map { Point(x: $0.0 + dx, y: $0.1 + dy) } }
+        return [
+            polyline(t([(55, 265), (110, 200), (160, 128), (172, 125), (200, 165), (268, 245)])),
+            polyline(t([(168, 72), (172, 90), (162, 230), (158, 320), (175, 340), (185, 345), (240, 450), (285, 590),
+                        (260, 570), (245, 500), (175, 380), (172, 470), (150, 540), (150, 558)])),
+        ]
+    }
+}
+
 @Suite struct InkTests {
     func kinds(_ items: [InkItem]) -> [String] {
         items.map {
             switch $0 {
             case let .shape(k, _): k.rawValue
+            case .person: "person"
             case let .connector(_, _, s, e): s || e ? "arrow" : "line"
             case .text: "text"
             }
@@ -148,5 +161,47 @@ enum Pen {
         ], to: &state)
         let lines = state.spec.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         #expect(lines.firstIndex(of: "B->>A: message")! < lines.firstIndex(of: "B->>A: second")!, "\(state.spec)")
+    }
+
+    @Test func stickFigureIsAPerson() {
+        #expect(kinds(InkRecognizer.recognize(Pen.stickFigure())) == ["person"])
+        // Three strokes plus a head.
+        let three = [
+            Pen.polyline([Point(x: 100, y: 40), Point(x: 100, y: 130)]),
+            Pen.polyline([Point(x: 60, y: 75), Point(x: 140, y: 72)]),
+            Pen.polyline([Point(x: 70, y: 190), Point(x: 100, y: 130), Point(x: 130, y: 192)]),
+            Pen.ellipse(100, 28, 13, 13),
+        ]
+        #expect(kinds(InkRecognizer.recognize(three)) == ["person"])
+        // Next to a box and a word, both stay what they are.
+        let mixed = Pen.stickFigure() + [Pen.rect(400, 200, 160, 80)] + Pen.word(420, 400)
+        #expect(Set(kinds(InkRecognizer.recognize(mixed))) == ["person", "rectangle", "text"])
+        // A tall letter is not a person.
+        #expect(kinds(InkRecognizer.recognize([Pen.polyline([Point(x: 0, y: 0), Point(x: 0, y: 100), Point(x: 50, y: 100)])])) != ["person"])
+    }
+
+    @Test func personBecomesActorOrC4Person() {
+        var plant = DrawingState(language: .plantUML, spec: "")
+        let r = Rect(x: 50, y: 70, width: 240, height: 520)
+        InkCommit.apply([.person(r, strokes: []), .text("Customer", bounds: Rect(x: 120, y: 600, width: 90, height: 24), strokes: [])], to: &plant)
+        let p = SpecParser.parse(plant.spec, language: .plantUML)
+        #expect(p.nodes.map(\.kind) == [.actor], "\(plant.spec)")
+        #expect(p.nodes.first?.title == "Customer")
+
+        var c4 = DrawingState(language: .mermaid, spec: "C4Context\n  System(s, \"Shop\")\n")
+        InkCommit.apply([.person(r, strokes: [])], to: &c4)
+        #expect(SpecParser.parse(c4.spec, language: .mermaid).nodes.contains { $0.kind == .person }, "\(c4.spec)")
+
+        // Mermaid flowcharts have no person shape: the drawing is kept as ink.
+        var flow = DrawingState(language: .mermaid, spec: "flowchart TD\n  A\n")
+        InkCommit.apply([.person(r, strokes: Pen.stickFigure())], to: &flow)
+        #expect(flow.decorations.map(\.kind) == [.ink])
+
+        // …but in a blank Mermaid document a figure starts a C4 context diagram.
+        var blank = DrawingState(language: .mermaid, spec: "")
+        InkCommit.apply([.person(r, strokes: [])], to: &blank)
+        let b = SpecParser.parse(blank.spec, language: .mermaid)
+        #expect(b.family == .c4 && b.nodes.map(\.kind) == [.person], "\(blank.spec)")
+        #expect(b.diagnostics.isEmpty)
     }
 }

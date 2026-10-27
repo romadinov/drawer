@@ -29,21 +29,36 @@ public enum InkCommit {
         }
     }
 
+    /// What a drawn stick figure becomes, or nil when the diagram has no person element (it then stays as ink).
+    public static func personKind(family: DiagramFamily, language: SpecLanguage) -> NodeKind? {
+        switch (family, language) {
+        case (.c4, _): .person
+        case (.sequence, _), (_, .plantUML): .actor
+        default: nil
+        }
+    }
+
     @discardableResult
     public static func apply(_ items: [InkItem], to state: inout DrawingState, measure: @escaping TextMeasurer = approximateMeasurer) -> Result {
         var result = Result()
         let needsSpec = items.contains { if case .text = $0 { false } else { true } }
+        // A blank Mermaid document has no person element; a drawn figure starts a C4 context diagram instead.
+        if state.language == .mermaid, state.spec.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           items.contains(where: { if case .person = $0 { true } else { false } }) {
+            state.spec = "C4Context\n"
+        }
         if needsSpec && state.spec.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             state.spec = state.language == .plantUML ? "@startuml\n\n@enduml\n" : "flowchart TD\n"
         }
         var parsed = Engine.reconcile(&state, measure: measure)
 
-        var shapes: [(kind: InkShapeKind, rect: Rect, words: [(String, Rect)])] = []
+        var shapes: [(kind: InkShapeKind?, rect: Rect, strokes: [InkStroke], words: [(String, Rect)])] = []
         var connectors: [(from: Point, to: Point, headStart: Bool, headEnd: Bool)] = []
         var texts: [(text: String?, rect: Rect, strokes: [InkStroke])] = []
         for item in items {
             switch item {
-            case let .shape(k, r): shapes.append((k, r, []))
+            case let .shape(k, r): shapes.append((k, r, [], []))
+            case let .person(r, s): shapes.append((nil, r, s, []))
             case let .connector(a, b, hs, he): connectors.append((a, b, hs, he))
             case let .text(t, r, s): texts.append((t, r, s))
             }
@@ -52,24 +67,38 @@ public enum InkCommit {
         // Handwriting inside a new shape names it.
         texts.removeAll { t in
             guard let text = t.text, !text.isEmpty else { return false }
-            let hosts = shapes.indices.filter { shapes[$0].rect.insetBy(-6).contains(t.rect.center) }
+            // A person's name is usually written underneath.
+            let hosts = shapes.indices.filter { i in
+                let r = shapes[i].rect
+                let zone = shapes[i].kind == nil ? Rect(x: r.minX - 40, y: r.minY, width: r.size.width + 80, height: r.size.height + 60) : r.insetBy(-6)
+                return zone.contains(t.rect.center)
+            }
             guard let i = hosts.min(by: { area(shapes[$0].rect) < area(shapes[$1].rect) }) else { return false }
             shapes[i].words.append((text, t.rect))
             return true
         }
 
-        // Shapes → nodes (or decorations).
+        // Shapes → nodes (or decorations). Remember where each was drawn: a big stick figure becomes
+        // a small actor icon, but an arrow drawn to the figure should still connect to it.
+        var drawn: [(id: String, rect: Rect)] = []
         for shape in shapes {
             let title = shape.words.sorted { abs($0.1.minY - $1.1.minY) > 10 ? $0.1.minY < $1.1.minY : $0.1.minX < $1.1.minX }
                 .map(\.0).joined(separator: " ")
-            guard let kind = nodeKind(for: shape.kind, rect: shape.rect, family: parsed.family, language: state.language) else {
-                let d = Decoration(kind: shape.kind == .ellipse ? .ellipse : .rectangle, frame: shape.rect, text: title)
+            let kind = shape.kind.map { nodeKind(for: $0, rect: shape.rect, family: parsed.family, language: state.language) }
+                ?? personKind(family: parsed.family, language: state.language)
+            guard let kind else {
+                let origin = shape.rect.origin
+                let d = shape.kind == nil
+                    ? Decoration(kind: .ink, frame: shape.rect, text: title,
+                                 strokes: shape.strokes.map { $0.points.map { Point(x: $0.x - origin.x, y: $0.y - origin.y) } })
+                    : Decoration(kind: shape.kind == .ellipse ? .ellipse : .rectangle, frame: shape.rect, text: title)
                 state.decorations.append(d)
                 result.created.append(.decoration(d.id))
                 continue
             }
             let parent = innermostGroup(containing: shape.rect, parsed: parsed, state: state, measure: measure)
-            let id = Engine.addNode(&state, kind: kind, title: title.isEmpty ? kind.displayName : title,
+            let fallbackTitle = shape.kind == nil ? "Person" : kind.displayName
+            let id = Engine.addNode(&state, kind: kind, title: title.isEmpty ? fallbackTitle : title,
                                     at: shape.rect.center, parent: parent, measure: measure)
             if [.box, .stadium, .circle, .diamond, .usecase, .container, .participant].contains(kind),
                let node = SpecParser.parse(state.spec, language: state.language).node(id) {
@@ -80,6 +109,7 @@ public enum InkCommit {
                                               size: Size(width: w, height: h))
             }
             result.created.append(.node(id))
+            drawn.append((id, shape.rect))
             if title.isEmpty { result.untitled.append(id) }
         }
         parsed = Engine.reconcile(&state, measure: measure)
@@ -88,8 +118,11 @@ public enum InkCommit {
         for c in connectors {
             var geometry = DiagramGeometry(parsed: parsed, state: state, measure: measure)
             let label = takeText(near: [c.from, c.to], from: &texts, maxDistance: 36)
-            guard var from = node(at: c.from, parsed: parsed, geometry: geometry),
-                  var to = node(at: c.to, parsed: parsed, geometry: geometry),
+            func endpoint(_ p: Point) -> String? {
+                node(at: p, parsed: parsed, geometry: geometry)
+                    ?? drawn.filter { $0.rect.insetBy(-22).contains(p) && parsed.node($0.id) != nil }.min { area($0.rect) < area($1.rect) }?.id
+            }
+            guard var from = endpoint(c.from), var to = endpoint(c.to),
                   from != to || parsed.family == .sequence else {
                 let (a, b) = c.headStart && !c.headEnd ? (c.to, c.from) : (c.from, c.to)
                 let d = Decoration(kind: c.headStart || c.headEnd ? .arrow : .line,

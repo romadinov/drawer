@@ -125,6 +125,7 @@ private final class UnsafeMutableTransferBox<T>: @unchecked Sendable { var value
 private extension InkItem {
     var summary: String {
         switch self {
+        case let .person(r, _): "person at \(Int(r.minX)),\(Int(r.minY)) \(Int(r.size.width))×\(Int(r.size.height))"
         case let .shape(k, r): "\(k) at \(Int(r.minX)),\(Int(r.minY)) \(Int(r.size.width))×\(Int(r.size.height))"
         case let .connector(a, b, hs, he): "connector \(Int(a.x)),\(Int(a.y)) → \(Int(b.x)),\(Int(b.y))\(hs ? " head@start" : "")\(he ? " head@end" : "")"
         case let .text(t, r, _): "text \(t.map { "\"\($0)\"" } ?? "(unreadable)") at \(Int(r.minX)),\(Int(r.minY))"

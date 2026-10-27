@@ -19,12 +19,14 @@ public enum InkShapeKind: String, Sendable {
 /// which has Vision); `text` is nil until then, and stays nil if nothing legible was found.
 public enum InkItem: Equatable, Sendable {
     case shape(InkShapeKind, Rect)
+    /// A stick figure. Its strokes are kept in case the diagram has no person element.
+    case person(Rect, strokes: [InkStroke])
     case connector(from: Point, to: Point, headAtStart: Bool, headAtEnd: Bool)
     case text(String?, bounds: Rect, strokes: [InkStroke])
 
     public var bounds: Rect {
         switch self {
-        case let .shape(_, r): r
+        case let .shape(_, r), let .person(r, _): r
         case let .connector(a, b, _, _): InkMath.bounds([a, b])
         case let .text(_, r, _): r
         }
@@ -38,9 +40,21 @@ public enum InkRecognizer {
         let strokes = input.filter { !$0.points.isEmpty }
         var used = Set<Int>()
         var shapes: [(kind: InkShapeKind, rect: Rect, members: [Int])] = []
+        var people: [InkItem] = []
+
+        // 0. Stick figures, before their limbs get mistaken for lines and arrowheads.
+        let notBoxes = strokes.indices.filter { i in
+            let b = strokes[i].bounds
+            return closedShape(strokes[i].points) == nil || max(b.size.width, b.size.height) <= 90
+        }
+        for group in touchingGroups(strokes, notBoxes) where isStickFigure(group.map { strokes[$0] }) {
+            let figure = group.map { strokes[$0] }
+            people.append(.person(InkMath.bounds(figure.flatMap(\.points)), strokes: figure))
+            used.formUnion(group)
+        }
 
         // 1. Single-stroke closed shapes.
-        for (i, s) in strokes.enumerated() {
+        for (i, s) in strokes.enumerated() where !used.contains(i) {
             if let kind = closedShape(s.points) { shapes.append((kind, s.bounds, [i])); used.insert(i) }
         }
         // 2. Closed shapes drawn in several strokes (e.g. a box as four sides).
@@ -81,7 +95,7 @@ public enum InkRecognizer {
             if inLine { used.subtract(shape.members) }
             return inLine
         }
-        var items: [InkItem] = shapes.map { .shape($0.kind, $0.rect) }
+        var items: [InkItem] = people + shapes.map { .shape($0.kind, $0.rect) }
         items += connectors.map { .connector(from: $0.from, to: $0.to, headAtStart: $0.headStart, headAtEnd: $0.headEnd) }
         // 5. Everything else is handwriting, clustered into words/lines.
         let rest = strokes.indices.filter { !used.contains($0) }.map { strokes[$0] }
@@ -158,6 +172,51 @@ public enum InkRecognizer {
             }
         }
         return result
+    }
+
+    // MARK: Stick figures
+
+    /// Strokes that touch each other (within a few points).
+    static func touchingGroups(_ strokes: [InkStroke], _ indices: [Int]) -> [[Int]] {
+        var parent = Dictionary(uniqueKeysWithValues: indices.map { ($0, $0) })
+        func find(_ i: Int) -> Int { var i = i; while parent[i]! != i { i = parent[i]! }; return i }
+        let margin = 10.0
+        for (k, i) in indices.enumerated() {
+            for j in indices[(k + 1)...] {
+                let a = strokes[i].bounds, b = strokes[j].bounds
+                guard Rect(x: a.minX - margin, y: a.minY - margin, width: a.size.width + 2 * margin, height: a.size.height + 2 * margin).intersects(b) else { continue }
+                let close = strokes[i].points.contains { p in strokes[j].points.contains { InkMath.distance(p, $0) < margin } }
+                if close { parent[find(i)] = find(j) }
+            }
+        }
+        return Dictionary(grouping: indices, by: find).values.map { $0.sorted() }.sorted { $0[0] < $1[0] }
+    }
+
+    /// A tall, sparse figure with a vertical spine near the middle, arms reaching out on both
+    /// sides in the upper part and legs spreading apart at the bottom. A head is optional.
+    static func isStickFigure(_ strokes: [InkStroke]) -> Bool {
+        guard (1...6).contains(strokes.count) else { return false }
+        let points = strokes.flatMap(\.points)
+        let r = InkMath.bounds(points)
+        let w = r.size.width, h = r.size.height
+        guard h >= 60, h >= 1.1 * w else { return false }
+        let ink = strokes.reduce(0) { $0 + $1.length }
+        guard ink >= 1.6 * h, ink <= 4.5 * h else { return false }
+
+        let segments = strokes.flatMap { s -> [(Point, Point)] in
+            let v = InkMath.simplify(s.points, epsilon: max(3, 0.04 * h))
+            return Array(zip(v, v.dropFirst()))
+        }
+        let vertical = segments.filter { abs($0.1.x - $0.0.x) <= 0.35 * abs($0.1.y - $0.0.y) && abs($0.1.y - $0.0.y) >= 0.3 * h }
+        guard let spine = vertical.max(by: { abs($0.1.y - $0.0.y) < abs($1.1.y - $1.0.y) }) else { return false }
+        let spineX = (spine.0.x + spine.1.x) / 2
+        guard abs(spineX - r.midX) <= 0.3 * w + 5, min(spine.0.y, spine.1.y) <= r.minY + 0.35 * h else { return false }
+
+        let upper = points.filter { $0.y < r.minY + 0.6 * h }.map(\.x)
+        guard let left = upper.min(), let right = upper.max(), spineX - left >= 0.15 * h, right - spineX >= 0.15 * h else { return false }
+        let feet = points.filter { $0.y > r.maxY - 0.2 * h }.map(\.x)
+        guard let l = feet.min(), let rr = feet.max(), rr - l >= 0.15 * h else { return false }
+        return true
     }
 
     // MARK: Lines and arrows
