@@ -74,9 +74,11 @@ public enum InkCommit {
             }
         }
 
-        // Handwriting inside a new shape names it.
+        // Handwriting inside a new shape names it (unless it was written on an element inside that shape).
+        let before = DiagramGeometry(parsed: parsed, state: state, measure: measure)
         texts.removeAll { t in
             guard let text = t.text, !text.isEmpty else { return false }
+            let onExisting = parsed.nodes.compactMap { before.frames[$0.id] }.filter { $0.contains(t.rect.center) }.map(area).min()
             // A person's name is usually written underneath.
             let hosts = shapes.indices.filter { i in
                 let r = shapes[i].rect
@@ -84,6 +86,7 @@ public enum InkCommit {
                 return zone.contains(t.rect.center)
             }
             guard let i = hosts.min(by: { area(shapes[$0].rect) < area(shapes[$1].rect) }) else { return false }
+            if let e = onExisting, e < area(shapes[i].rect) { return false }
             shapes[i].words.append((text, t.rect))
             return true
         }
@@ -91,9 +94,27 @@ public enum InkCommit {
         // Shapes → nodes (or decorations). Remember where each was drawn: a big stick figure becomes
         // a small actor icon, but an arrow drawn to the figure should still connect to it.
         var drawn: [(id: String, rect: Rect)] = []
-        for shape in shapes {
+        for shape in shapes.sorted(by: { area($0.rect) < area($1.rect) }) {
+            parsed = Engine.reconcile(&state, measure: measure)
+            let geometry = DiagramGeometry(parsed: parsed, state: state, measure: measure)
             let title = shape.words.sorted { abs($0.1.minY - $1.1.minY) > 10 ? $0.1.minY < $1.1.minY : $0.1.minX < $1.1.minX }
                 .map(\.0).joined(separator: " ")
+            // Drawn around existing elements: it's a group of them.
+            let enclosed = shape.kind == nil ? [] : enclosedNodes(in: shape.rect, parsed: parsed, geometry: geometry)
+            if !enclosed.isEmpty, let groupKind = groupKind(family: parsed.family, language: state.language) {
+                let parent = innermostGroup(containing: shape.rect, parsed: parsed, state: state, measure: measure, excluding: Set(enclosed))
+                let id = Engine.addNode(&state, kind: groupKind, title: title.isEmpty ? (groupKind == .boundary ? "System" : "Group") : title,
+                                        at: shape.rect.center, parent: parent, measure: measure)
+                var editor = SpecEditor(spec: state.spec, language: state.language)
+                editor.move(nodes: enclosed, into: id)
+                state.spec = editor.spec
+                state.layout[id] = NodeLayout(position: Point(x: shape.rect.minX.rounded(), y: shape.rect.minY.rounded()),
+                                              size: Size(width: shape.rect.size.width.rounded(), height: shape.rect.size.height.rounded()))
+                result.created.append(.node(id))
+                drawn.append((id, shape.rect))
+                if title.isEmpty { result.untitled.append(id) }
+                continue
+            }
             let options = choices(for: shape.kind, rect: shape.rect, family: parsed.family, language: state.language)
             guard let kind = options.first else {
                 let origin = shape.rect.origin
@@ -105,7 +126,17 @@ public enum InkCommit {
                 result.created.append(.decoration(d.id))
                 continue
             }
-            let parent = innermostGroup(containing: shape.rect, parsed: parsed, state: state, measure: measure)
+            // Drawn inside an element: it becomes a child — turning a container into a boundary if need be.
+            var parent = innermostGroup(containing: shape.rect, parsed: parsed, state: state, measure: measure)
+            if let host = containerHost(for: shape.rect, parsed: parsed, geometry: geometry, family: parsed.family, language: state.language),
+               parent.map({ p in parsed.descendants(of: p).contains { $0.id == host.id } }) ?? true {
+                let caption: String?? = parsed.family == .c4 ? .some(host.kind.c4Caption?.replacingOccurrences(of: "External ", with: "") ?? "System") : nil
+                if let hostFrame = geometry.frames[host.id], state.layout[host.id]?.size == nil {
+                    state.layout[host.id] = NodeLayout(position: hostFrame.origin, size: hostFrame.size)
+                }
+                Engine.updateNode(&state, id: host.id, NodeEdit(kind: groupKind(family: parsed.family, language: state.language)!, stereotype: caption), measure: measure)
+                parent = host.id
+            }
             let fallbackTitle = shape.kind == nil ? "Person" : kind.displayName
             let id = Engine.addNode(&state, kind: kind, title: title.isEmpty ? fallbackTitle : title,
                                     at: shape.rect.center, parent: parent, measure: measure)
@@ -222,9 +253,41 @@ public enum InkCommit {
         return hits.filter { $0.0.kind.isGroup }.min { area($0.1) < area($1.1) }?.0.id
     }
 
-    static func innermostGroup(containing r: Rect, parsed: ParsedDiagram, state: DrawingState, measure: @escaping TextMeasurer) -> String? {
+    /// The group kind for this diagram, or nil if it has none (Mermaid ER and sequence diagrams).
+    static func groupKind(family: DiagramFamily, language: SpecLanguage) -> NodeKind? {
+        switch (family, language) {
+        case (.sequence, _), (.erDiagram, .mermaid): nil
+        case (.c4, _): .boundary
+        default: .group
+        }
+    }
+
+    /// Existing top-most elements lying (almost) entirely inside `r`.
+    static func enclosedNodes(in r: Rect, parsed: ParsedDiagram, geometry: DiagramGeometry) -> [String] {
+        let inside = Set(parsed.nodes.compactMap { n -> String? in
+            guard let f = geometry.frames[n.id] else { return nil }
+            let clipped = Rect(x: max(f.minX, r.minX), y: max(f.minY, r.minY),
+                               width: max(0, min(f.maxX, r.maxX) - max(f.minX, r.minX)), height: max(0, min(f.maxY, r.maxY) - max(f.minY, r.minY)))
+            return area(clipped) >= 0.85 * area(f) && area(f) < 0.8 * area(r) ? n.id : nil
+        })
+        return parsed.nodes.filter { inside.contains($0.id) && !($0.parent.map(inside.contains) ?? false) }.map(\.id)
+    }
+
+    /// An element big enough to hold `r` that can become a group: C4 systems, containers and components,
+    /// and plain boxes. Classes, entities, people and databases never swallow what's drawn on them.
+    static func containerHost(for r: Rect, parsed: ParsedDiagram, geometry: DiagramGeometry, family: DiagramFamily, language: SpecLanguage) -> DiagramNode? {
+        guard groupKind(family: family, language: language) != nil else { return nil }
+        let containers: Set<NodeKind> = [.system, .systemExt, .container, .containerExt, .component4, .component4Ext,
+                                         .box, .rounded, .component, .node, .cloud, .folder]
+        return parsed.nodes.filter { containers.contains($0.kind) }
+            .compactMap { n in geometry.frames[n.id].flatMap { $0.contains(r.center) && area(r) < 0.6 * area($0) ? (n, $0) : nil } }
+            .min { area($0.1) < area($1.1) }?.0
+    }
+
+    static func innermostGroup(containing r: Rect, parsed: ParsedDiagram, state: DrawingState, measure: @escaping TextMeasurer,
+                               excluding: Set<String> = []) -> String? {
         let geometry = DiagramGeometry(parsed: parsed, state: state, measure: measure)
-        return parsed.nodes.filter(\.kind.isGroup)
+        return parsed.nodes.filter { $0.kind.isGroup && !excluding.contains($0.id) }
             .compactMap { g in geometry.frames[g.id].flatMap { $0.contains(r.center) ? (g.id, $0) : nil } }
             .min { area($0.1) < area($1.1) }?.0
     }

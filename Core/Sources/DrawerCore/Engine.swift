@@ -126,7 +126,8 @@ public enum Engine {
         for id in nodeIDs {
             guard let frame = geometry.frames[id] else { continue }
             let isGroupWithChildren = parsed.node(id)?.kind.isGroup == true && !parsed.children(of: id).isEmpty
-            if isGroupWithChildren { continue }
+            // A group with children follows them, except for an explicit size it keeps (see DiagramGeometry).
+            if isGroupWithChildren && state.layout[id]?.size == nil { continue }
             var l = state.layout[id] ?? NodeLayout(position: frame.origin)
             l.position = Point(x: (l.position.x + delta.x).rounded(), y: (l.position.y + delta.y).rounded())
             state.layout[id] = l

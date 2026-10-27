@@ -84,7 +84,14 @@ public struct DiagramGeometry: Sendable {
                 let pad = Metrics.groupPadding
                 let top = isC4 ? pad : pad + Metrics.groupHeader
                 let bottom = isC4 ? pad + Metrics.groupHeader + 8 : pad
-                frames[group.id] = Rect(x: box.minX - pad, y: box.minY - top, width: box.size.width + 2 * pad, height: box.size.height + top + bottom)
+                var frame = Rect(x: box.minX - pad, y: box.minY - top, width: box.size.width + 2 * pad, height: box.size.height + top + bottom)
+                // A group drawn (or resized) bigger than its contents keeps that size.
+                if let l = state.layout[group.id], let s = l.size {
+                    var p = l.position
+                    if let o = overrides[group.id] { p = Point(x: p.x + o.x, y: p.y + o.y) }
+                    frame = frame.union(Rect(x: p.x, y: p.y, width: s.width, height: s.height))
+                }
+                frames[group.id] = frame
             } else {
                 var p = state.layout[group.id]?.position ?? .zero
                 if let o = overrides[group.id] { p = Point(x: p.x + o.x, y: p.y + o.y) }

@@ -265,4 +265,69 @@ extension Pen {
             #expect(SpecParser.parse(state.spec, language: language).node(id2)?.title == "Billing")
         }
     }
+
+    /// Draws a rectangle around everything currently in the diagram.
+    func around(_ state: inout DrawingState) -> Rect {
+        let parsed = Engine.reconcile(&state)
+        let b = DiagramGeometry(parsed: parsed, state: state, measure: approximateMeasurer).bounds!
+        return Rect(x: b.minX - 30, y: b.minY - 40, width: b.size.width + 60, height: b.size.height + 80)
+    }
+
+    @Test func drawingAroundElementsGroupsThem() {
+        let cases: [(SpecLanguage, String, NodeKind)] = [
+            (.mermaid, "flowchart TD\n  A[Alpha] --> B[Beta]\n", .group),
+            (.plantUML, "@startuml\ncomponent Alpha\ncomponent Beta\nAlpha --> Beta\n@enduml\n", .group),
+            (.mermaid, "classDiagram\n  class Order\n  class Line\n  Order --> Line\n", .group),
+            (.plantUML, "@startuml\nclass Order {\n  +id : UUID\n}\nclass Line\nOrder --> Line\n@enduml\n", .group),
+            (.mermaid, "C4Container\n  Container(web, \"Web\")\n  ContainerDb(db, \"DB\")\n  Rel(web, db, \"reads\")\n", .boundary),
+            (.plantUML, "@startuml\n!include <C4/C4_Container>\nContainer(web, \"Web\")\nContainerDb(db, \"DB\")\nRel(web, db, \"reads\")\n@enduml\n", .boundary),
+        ]
+        for (language, spec, kind) in cases {
+            var state = DrawingState(language: language, spec: spec)
+            let before = SpecParser.parse(spec, language: language)
+            let rect = around(&state)
+            let result = InkCommit.apply([.shape(.rectangle, rect), .text("Core", bounds: Rect(x: rect.minX + 10, y: rect.minY + 8, width: 40, height: 16), strokes: [])], to: &state)
+            let after = SpecParser.parse(state.spec, language: language)
+            let group = after.nodes.first { $0.kind == kind }
+            #expect(group?.title == "Core", "\(language): \(state.spec)")
+            #expect(Set(after.children(of: group?.id ?? "").map(\.id)) == Set(before.nodes.map(\.id)), "\(language): \(state.spec)")
+            #expect(after.edges.count == before.edges.count)
+            #expect(after.diagnostics.isEmpty, "\(language): \(after.diagnostics) \(state.spec)")
+            if spec.contains("+id") { #expect(after.node("Order")?.fields.count == 1, "members survive the move: \(state.spec)") }
+            #expect(result.created.contains(.node(group?.id ?? "")))
+            // Keeps the size it was drawn at.
+            let frame = DiagramGeometry(parsed: after, state: state, measure: approximateMeasurer).frames[group!.id]!
+            #expect(frame.size.width >= rect.size.width - 1 && frame.size.height >= rect.size.height - 1)
+        }
+    }
+
+    @Test func drawingInsideAContainerMakesChildren() {
+        for language in SpecLanguage.allCases {
+            var state = DrawingState(language: language, spec: DiagramStarter.blankSpec(.c4, language: language))
+            // A container drawn big, then components drawn inside it in a later batch.
+            InkCommit.apply([.shape(.rectangle, Rect(x: 0, y: 0, width: 500, height: 320)),
+                             .text("Shop API", bounds: Rect(x: 200, y: 10, width: 80, height: 18), strokes: [])], to: &state)
+            let api = SpecParser.parse(state.spec, language: language).nodes.first { $0.title == "Shop API" }!
+            #expect(api.kind == .container)
+            InkCommit.apply([.shape(.rectangle, Rect(x: 30, y: 80, width: 160, height: 80)),
+                             .text("Orders", bounds: Rect(x: 60, y: 110, width: 60, height: 18), strokes: []),
+                             .shape(.rectangle, Rect(x: 280, y: 80, width: 160, height: 80)),
+                             .text("Payments", bounds: Rect(x: 310, y: 110, width: 70, height: 18), strokes: [])], to: &state)
+            let p = SpecParser.parse(state.spec, language: language)
+            let boundary = p.nodes.first { $0.title == "Shop API" }!
+            #expect(boundary.kind == .boundary && boundary.stereotype == "Container", "\(language): \(state.spec)")
+            #expect(Set(p.children(of: boundary.id).map(\.title)) == ["Orders", "Payments"], "\(language): \(state.spec)")
+            #expect(state.spec.contains("Container_Boundary("))
+            #expect(p.diagnostics.isEmpty, "\(p.diagnostics)")
+            // The boundary keeps the container's size.
+            let f = DiagramGeometry(parsed: p, state: state, measure: approximateMeasurer).frames[boundary.id]!
+            #expect(f.size.width >= 499, "\(f)")
+        }
+        // Classes don't swallow shapes drawn on them.
+        var cls = DrawingState(language: .mermaid, spec: "classDiagram\n  class Order\n")
+        let parsed = Engine.reconcile(&cls)
+        let f = DiagramGeometry(parsed: parsed, state: cls, measure: approximateMeasurer).frames["Order"]!
+        InkCommit.apply([.shape(.rectangle, Rect(x: f.midX - 10, y: f.midY - 10, width: 20, height: 20))], to: &cls)
+        #expect(SpecParser.parse(cls.spec, language: .mermaid).node("Order")?.kind == .classType)
+    }
 }

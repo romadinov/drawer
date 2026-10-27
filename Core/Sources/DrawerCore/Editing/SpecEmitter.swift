@@ -36,7 +36,12 @@ struct SpecEmitter {
 
     func groupOpening(_ node: DiagramNode, indent: String) -> String {
         if family == .c4 || node.kind == .boundary {
-            return indent + "System_Boundary(\(node.id), \"\(quoted(node.title))\") {"
+            let macro = switch node.stereotype {
+            case "Container": "Container_Boundary"
+            case "Enterprise": "Enterprise_Boundary"
+            default: "System_Boundary"
+            }
+            return indent + "\(macro)(\(node.id), \"\(quoted(node.title))\") {"
         }
         switch language {
         case .mermaid:

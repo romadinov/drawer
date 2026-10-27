@@ -157,6 +157,29 @@ public struct SpecEditor {
         return id
     }
 
+    /// Moves elements into a group block: their declarations are cut and pasted inside it
+    /// (or a declaration is added there for elements that were only mentioned in relationships).
+    public mutating func move(nodes ids: [String], into parent: String) {
+        for id in ids where id != parent {
+            guard let node = parsed.node(id), node.parent != parent, parsed.node(parent) != nil else { continue }
+            var block: String
+            if let span = node.declarationSpan, node.declarationIsStandalone {
+                let range = lineRange(span)
+                let lines = (spec as NSString).substring(with: range).split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+                let indent = lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+                    .map { String($0.prefix { $0 == " " || $0 == "\t" }) }.min { $0.count < $1.count } ?? ""
+                block = lines.map { $0.hasPrefix(indent) ? String($0.dropFirst(indent.count)) : $0 }
+                    .joined(separator: "\n").trimmingCharacters(in: .newlines)
+                apply([Replacement(range: range, text: "")])
+            } else {
+                var n = node
+                n.parent = parent
+                block = emitter.declaration(for: n)
+            }
+            insert(block, inside: parent)
+        }
+    }
+
     public mutating func addEdge(from: String, to: String, label: String? = nil, before: String? = nil) {
         var edge = emitter.defaultEdge(from: from, to: to)
         edge.label = label ?? (parsed.family == .sequence ? "message" : nil)
