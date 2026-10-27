@@ -3,9 +3,18 @@ options:
   bundleIdPrefix: com.romadinov
   deploymentTarget:
     macOS: "27.0"
+    iOS: "27.0"
 packages:
   DrawerCore:
     path: Core
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "0.2"
+    CURRENT_PROJECT_VERSION: "2"
+    GENERATE_INFOPLIST_FILE: NO
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 targets:
   Drawer:
     type: application
@@ -13,20 +22,31 @@ targets:
     sources:
       - App/Sources
       - App/Resources
+      - Shared
     dependencies:
       - package: DrawerCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.romadinov.drawer
         PRODUCT_NAME: Drawer
-        MARKETING_VERSION: "0.1"
-        CURRENT_PROJECT_VERSION: "1"
-        SWIFT_VERSION: "5.0"
-        SWIFT_STRICT_CONCURRENCY: minimal
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO
-        GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Info.plist
         COMBINE_HIDPI_IMAGES: YES
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  DrawerMobile:
+    type: application
+    platform: iOS
+    sources:
+      - Mobile/Sources
+      - Mobile/Resources
+      - Shared
+    dependencies:
+      - package: DrawerCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.romadinov.drawer.mobile
+        PRODUCT_NAME: Drawer
+        INFOPLIST_FILE: Mobile/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic

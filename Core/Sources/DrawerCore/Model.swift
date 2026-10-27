@@ -146,6 +146,8 @@ public struct ElementStyle: Codable, Equatable, Sendable {
 public struct Decoration: Codable, Equatable, Identifiable, Sendable {
     public enum Kind: String, Codable, CaseIterable, Sendable {
         case text, rectangle, roundedRectangle, ellipse, line, arrow, note
+        /// Freehand strokes that were not recognised as a shape or text.
+        case ink
     }
     public var id: UUID
     public var kind: Kind
@@ -154,14 +156,18 @@ public struct Decoration: Codable, Equatable, Identifiable, Sendable {
     public var text: String
     public var fontSize: Double
     public var style: ElementStyle
+    /// Ink strokes, relative to `frame.origin`.
+    public var strokes: [[Point]]?
 
-    public init(id: UUID = UUID(), kind: Kind, frame: Rect, text: String = "", fontSize: Double = 13, style: ElementStyle = ElementStyle()) {
+    public init(id: UUID = UUID(), kind: Kind, frame: Rect, text: String = "", fontSize: Double = 13, style: ElementStyle = ElementStyle(),
+                strokes: [[Point]]? = nil) {
         self.id = id
         self.kind = kind
         self.frame = frame
         self.text = text
         self.fontSize = fontSize
         self.style = style
+        self.strokes = strokes
     }
 }
 

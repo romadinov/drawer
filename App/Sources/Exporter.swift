@@ -90,4 +90,44 @@ enum HeadlessExport {
             exit(1)
         }
     }
+
+    /// Debug aid: treats the ink decorations in `input` as freshly drawn strokes, recognises them
+    /// (shapes + Vision handwriting) and writes the result. Drawer --ink input.drawer output.drawer
+    static func recognizeInk(input: String, output: String) -> Never {
+        do {
+            var state = try JSONDecoder().decode(DrawingState.self, from: Data(contentsOf: URL(fileURLWithPath: input)))
+            let strokes = state.decorations.filter { $0.kind == .ink }.flatMap { d in
+                (d.strokes ?? []).map { InkStroke($0.map { Point(x: $0.x + d.frame.origin.x, y: $0.y + d.frame.origin.y) }) }
+            }
+            state.decorations.removeAll { $0.kind == .ink }
+            let shapes = InkRecognizer.recognize(strokes)
+            let box = UnsafeMutableTransferBox<[InkItem]>()
+            let done = DispatchSemaphore(value: 0)
+            Task.detached { box.value = await HandwritingReader.read(shapes); done.signal() }
+            done.wait()
+            let items = box.value ?? shapes
+            for item in items { print("recognised:", item.summary) }
+            InkCommit.apply(items, to: &state, measure: appMeasurer)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try encoder.encode(state).write(to: URL(fileURLWithPath: output))
+            print(state.spec)
+            exit(0)
+        } catch {
+            FileHandle.standardError.write("ink failed: \(error)\n".data(using: .utf8)!)
+            exit(1)
+        }
+    }
+}
+
+private final class UnsafeMutableTransferBox<T>: @unchecked Sendable { var value: T? }
+
+private extension InkItem {
+    var summary: String {
+        switch self {
+        case let .shape(k, r): "\(k) at \(Int(r.minX)),\(Int(r.minY)) \(Int(r.size.width))×\(Int(r.size.height))"
+        case let .connector(a, b, hs, he): "connector \(Int(a.x)),\(Int(a.y)) → \(Int(b.x)),\(Int(b.y))\(hs ? " head@start" : "")\(he ? " head@end" : "")"
+        case let .text(t, r, _): "text \(t.map { "\"\($0)\"" } ?? "(unreadable)") at \(Int(r.minX)),\(Int(r.minY))"
+        }
+    }
 }

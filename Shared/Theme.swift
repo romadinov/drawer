@@ -1,5 +1,34 @@
-import AppKit
 import DrawerCore
+#if os(macOS)
+import AppKit
+
+var currentGraphicsContext: CGContext? { NSGraphicsContext.current?.cgContext }
+/// CoreGraphics shadow offsets are in device space, which points up on the Mac.
+let shadowOffsetDown: CGFloat = -1
+#else
+import UIKit
+
+// AppKit names for the UIKit types the shared drawing code uses.
+typealias NSColor = UIColor
+typealias NSFont = UIFont
+typealias NSBezierPath = UIBezierPath
+
+var currentGraphicsContext: CGContext? { UIGraphicsGetCurrentContext() }
+let shadowOffsetDown: CGFloat = 1
+
+extension UIColor {
+    convenience init(srgbRed r: CGFloat, green g: CGFloat, blue b: CGFloat, alpha a: CGFloat) { self.init(red: r, green: g, blue: b, alpha: a) }
+    static var labelColor: UIColor { .label }
+    static var secondaryLabelColor: UIColor { .secondaryLabel }
+    static var controlAccentColor: UIColor { .systemBlue }
+}
+
+extension UIBezierPath {
+    convenience init(roundedRect rect: CGRect, xRadius: CGFloat, yRadius: CGFloat) { self.init(roundedRect: rect, cornerRadius: xRadius) }
+    func line(to p: CGPoint) { addLine(to: p) }
+    func curve(to p: CGPoint, controlPoint1 c1: CGPoint, controlPoint2 c2: CGPoint) { addCurve(to: p, controlPoint1: c1, controlPoint2: c2) }
+}
+#endif
 
 enum Fonts {
     static let title = NSFont.systemFont(ofSize: 13, weight: .semibold)
@@ -8,6 +37,14 @@ enum Fonts {
     static let member = NSFont.monospacedSystemFont(ofSize: 11.5, weight: .regular)
     static let edgeLabel = NSFont.systemFont(ofSize: 11)
     static let groupTitle = NSFont.systemFont(ofSize: 12, weight: .semibold)
+
+    static func italic(_ font: NSFont) -> NSFont {
+        #if os(macOS)
+        NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
+        #else
+        font.fontDescriptor.withSymbolicTraits(.traitItalic).map { UIFont(descriptor: $0, size: font.pointSize) } ?? font
+        #endif
+    }
 
     static func font(for role: TextRole) -> NSFont {
         switch role {
@@ -24,8 +61,8 @@ enum Fonts {
 let appMeasurer: TextMeasurer = { text, role, maxWidth in
     let font = Fonts.font(for: role)
     let s = NSAttributedString(string: text.isEmpty ? " " : text, attributes: [.font: font])
-    let bounds = s.boundingRect(with: NSSize(width: maxWidth ?? 10_000, height: 10_000),
-                                options: [.usesLineFragmentOrigin, .usesFontLeading])
+    let bounds = s.boundingRect(with: CGSize(width: maxWidth ?? 10_000, height: 10_000),
+                                options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
     return Size(width: ceil(bounds.width), height: ceil(bounds.height))
 }
 
@@ -44,16 +81,25 @@ extension NSColor {
     }
 
     var hexString: String {
-        let c = usingColorSpace(.sRGB) ?? self
-        let r = Int((c.redComponent * 255).rounded()), g = Int((c.greenComponent * 255).rounded()), b = Int((c.blueComponent * 255).rounded())
-        let a = Int((c.alphaComponent * 255).rounded())
+        var rf: CGFloat = 0, gf: CGFloat = 0, bf: CGFloat = 0, af: CGFloat = 0
+        #if os(macOS)
+        (usingColorSpace(.sRGB) ?? self).getRed(&rf, green: &gf, blue: &bf, alpha: &af)
+        #else
+        getRed(&rf, green: &gf, blue: &bf, alpha: &af)
+        #endif
+        let r = Int((rf * 255).rounded()), g = Int((gf * 255).rounded()), b = Int((bf * 255).rounded())
+        let a = Int((af * 255).rounded())
         return a == 255 ? String(format: "#%02X%02X%02X", r, g, b) : String(format: "#%02X%02X%02X%02X", r, g, b, a)
     }
 
     static func dynamic(light: NSColor, dark: NSColor) -> NSColor {
+        #if os(macOS)
         NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
         }
+        #else
+        UIColor { $0.userInterfaceStyle == .dark ? dark : light }
+        #endif
     }
 }
 

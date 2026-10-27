@@ -9,6 +9,9 @@ struct DrawerApp: App {
         if let i = args.firstIndex(of: "--export"), args.count > i + 2 {
             MainActor.assumeIsolated { HeadlessExport.run(input: args[i + 1], output: args[i + 2]) }
         }
+        if let i = args.firstIndex(of: "--ink"), args.count > i + 2 {
+            MainActor.assumeIsolated { HeadlessExport.recognizeInk(input: args[i + 1], output: args[i + 2]) }
+        }
     }
 
     var body: some Scene {

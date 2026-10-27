@@ -1,7 +1,11 @@
-import AppKit
 import DrawerCore
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
-/// Draws a diagram into the current (flipped) NSGraphicsContext. Used by the canvas and by export.
+/// Draws a diagram into the current flipped (top-left origin) graphics context. Used by the canvas and by export.
 struct DiagramRenderer {
     let parsed: ParsedDiagram
     let state: DrawingState
@@ -52,18 +56,18 @@ struct DiagramRenderer {
     @discardableResult
     static func drawText(_ text: String, font: NSFont, color: NSColor, in rect: CGRect, alignment: NSTextAlignment = .center, italic: Bool = false) -> CGFloat {
         var f = font
-        if italic { f = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask) }
+        if italic { f = Fonts.italic(font) }
         let attrs: [NSAttributedString.Key: Any] = [.font: f, .foregroundColor: color, .paragraphStyle: paragraph(alignment)]
         let s = NSAttributedString(string: text, attributes: attrs)
-        let bounds = s.boundingRect(with: NSSize(width: rect.width, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading])
+        let bounds = s.boundingRect(with: CGSize(width: rect.width, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
         s.draw(with: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: max(rect.height, bounds.height)),
-               options: [.usesLineFragmentOrigin, .usesFontLeading])
+               options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
         return ceil(bounds.height)
     }
 
     static func textHeight(_ text: String, font: NSFont, width: CGFloat) -> CGFloat {
         let s = NSAttributedString(string: text, attributes: [.font: font, .paragraphStyle: paragraph(.center)])
-        return ceil(s.boundingRect(with: NSSize(width: width, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading]).height)
+        return ceil(s.boundingRect(with: CGSize(width: width, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil).height)
     }
 
     // MARK: Styles
@@ -99,15 +103,12 @@ struct DiagramRenderer {
             p.stroke.setStroke(); back.lineWidth = lw; back.stroke()
         }
         if !node.kind.isIconWithLabel {
-            NSGraphicsContext.current?.saveGraphicsState()
-            let shadow = NSShadow()
-            shadow.shadowColor = NSColor.black.withAlphaComponent(0.12)
-            shadow.shadowOffset = NSSize(width: 0, height: -1.5)
-            shadow.shadowBlurRadius = 3
-            shadow.set()
+            let ctx = currentGraphicsContext
+            ctx?.saveGState()
+            ctx?.setShadow(offset: CGSize(width: 0, height: shadowOffsetDown * 1.5), blur: 3, color: NSColor.black.withAlphaComponent(0.12).cgColor)
             p.fill.setFill()
             path.fill()
-            NSGraphicsContext.current?.restoreGraphicsState()
+            ctx?.restoreGState()
             p.stroke.setStroke()
             path.lineWidth = lw
             if dashed { path.setLineDash([6, 4], count: 2, phase: 0) }
@@ -550,7 +551,7 @@ struct DiagramRenderer {
                 bg.stroke()
             }
             let attributed = Self.labelString(label, edge: edge, color: selected ? NodePalette.selection : NSColor.labelColor)
-            attributed.draw(with: rect, options: [.usesLineFragmentOrigin, .usesFontLeading])
+            attributed.draw(with: rect, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
         }
         if let s = edge.fromLabel, !s.isEmpty { drawEndLabel(s, tip: points[0], toward: points[1]) }
         if let s = edge.toLabel, !s.isEmpty { drawEndLabel(s, tip: points[points.count - 1], toward: points[points.count - 2]) }
@@ -580,7 +581,7 @@ struct DiagramRenderer {
 
     static func labelRect(_ text: String, at p: CGPoint) -> CGRect {
         let s = NSAttributedString(string: text, attributes: [.font: Fonts.edgeLabel, .paragraphStyle: paragraph(.center)])
-        let b = s.boundingRect(with: NSSize(width: 180, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading])
+        let b = s.boundingRect(with: CGSize(width: 180, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
         let w = min(ceil(b.width) + 4, 184)
         return CGRect(x: p.x - w / 2, y: p.y - ceil(b.height) / 2, width: w, height: ceil(b.height))
     }
@@ -687,6 +688,8 @@ struct DiagramRenderer {
                           in: CGRect(x: r.minX + 10, y: r.minY + 10, width: r.width - 26, height: 0), alignment: .left)
         case .text:
             Self.drawText(d.text.isEmpty ? " " : d.text, font: font, color: textColor, in: r.insetBy(dx: 2, dy: 2), alignment: .left)
+        case .ink:
+            Self.strokeInk(d.strokes ?? [], offset: CGPoint(d.frame.origin), color: stroke, width: CGFloat(d.style.lineWidth ?? 2))
         case .line, .arrow:
             let a = CGPoint(d.frame.origin)
             let b = CGPoint(x: d.frame.origin.x + d.frame.size.width, y: d.frame.origin.y + d.frame.size.height)
@@ -711,5 +714,21 @@ struct DiagramRenderer {
             NodePalette.selection.setStroke()
             sel.stroke()
         }
+    }
+
+    /// Freehand strokes (pending ink and ink decorations).
+    static func strokeInk(_ strokes: [[Point]], offset: CGPoint = .zero, color: NSColor, width: CGFloat) {
+        let path = NSBezierPath()
+        for stroke in strokes {
+            guard let first = stroke.first else { continue }
+            path.move(to: CGPoint(x: first.x + offset.x, y: first.y + offset.y))
+            if stroke.count == 1 { path.line(to: CGPoint(x: first.x + offset.x + 0.1, y: first.y + offset.y)) }
+            for p in stroke.dropFirst() { path.line(to: CGPoint(x: p.x + offset.x, y: p.y + offset.y)) }
+        }
+        path.lineWidth = width
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        color.setStroke()
+        path.stroke()
     }
 }

@@ -5,6 +5,8 @@ import DrawerCore
 enum Tool: Hashable {
     case select
     case connect
+    /// Freehand: strokes are recognised as shapes, arrows and handwriting.
+    case draw
     case node(NodeKind)
     case decoration(Decoration.Kind)
 }
@@ -23,12 +25,16 @@ struct CanvasView: NSViewRepresentable {
         let v = CanvasNSView()
         v.document = document
         v.onToolReset = { tool = .select }
+        v.onToolChange = { tool = $0 }
         v.onZoomChange = { zoom = $0 }
+        v.ink.document = document
+        v.ink.onChange = { [weak v] in v?.needsDisplay = true }
         return v
     }
 
     func updateNSView(_ v: CanvasNSView, context: Context) {
         v.document = document
+        v.ink.document = document
         v.tool = tool
         document.undoManager = undoManager
         if abs(v.zoom - zoom) > 0.001 { v.setZoom(zoom, around: nil) }
@@ -46,8 +52,15 @@ struct CanvasView: NSViewRepresentable {
 
 final class CanvasNSView: NSView, NSTextFieldDelegate {
     weak var document: DrawerDocument?
-    var tool: Tool = .select { didSet { window?.invalidateCursorRects(for: self) } }
+    var tool: Tool = .select {
+        didSet {
+            window?.invalidateCursorRects(for: self)
+            if oldValue == .draw && tool != .draw { ink.commit() }
+        }
+    }
+    let ink = InkSession()
     var onToolReset: () -> Void = {}
+    var onToolChange: (Tool) -> Void = { _ in }
     var onZoomChange: (CGFloat) -> Void = { _ in }
     var lastFitRequest = 0
 
@@ -67,6 +80,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
         case connecting(from: String, current: CGPoint)
         case creating(kind: Decoration.Kind, start: CGPoint, current: CGPoint)
         case panning(startPan: CGPoint, start: CGPoint)
+        case inking
     }
     private var interaction = Interaction.none
     private var hoverTarget: String?
@@ -198,6 +212,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
             DiagramRenderer(parsed: .empty, state: DrawingState(decorations: [r])).drawDecoration(r)
         default: break
         }
+        if !ink.isEmpty { DiagramRenderer.strokeInk(ink.pending, color: NodePalette.selection, width: 2.2) }
         ctx.restoreGState()
         if case let .marquee(start, current, _) = interaction {
             let r = CGRect(x: min(start.x, current.x), y: min(start.y, current.y), width: abs(current.x - start.x), height: abs(current.y - start.y))
@@ -207,7 +222,10 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
             NSBezierPath(rect: r).stroke()
         }
         if doc.parsed.nodes.isEmpty && doc.state.decorations.isEmpty {
-            DiagramRenderer.drawText("Write a PlantUML or Mermaid spec on the left, pick a template, or choose a shape from the toolbar and click here.",
+            guard ink.isEmpty else { return }
+            DiagramRenderer.drawText(tool == .draw
+                                     ? "Draw boxes, circles, diamonds and arrows, and write names inside them. They turn into diagram elements when you pause."
+                                     : "Write a PlantUML or Mermaid spec on the left, pick a template, draw freehand (D), or choose a shape from the toolbar and click here.",
                                      font: .systemFont(ofSize: 13), color: .secondaryLabelColor,
                                      in: CGRect(x: bounds.midX - 220, y: bounds.midY - 20, width: 440, height: 40))
         }
@@ -371,6 +389,10 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
         }
 
         switch tool {
+        case .draw:
+            interaction = .inking
+            ink.begin(at: p.point)
+            return
         case let .node(kind):
             let parent = (kind.isGroup ? nil : deepestGroup(at: p, doc: doc))
             doc.addNode(kind: kind, at: p.point, parent: parent)
@@ -466,6 +488,8 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
         let v = location(event)
         didDrag = true
         switch interaction {
+        case .inking:
+            ink.add(toDiagram(v).point)
         case let .marquee(start, _, additive):
             interaction = .marquee(start: start, current: v, additive: additive)
             let r = CGRect(x: min(start.x, v.x), y: min(start.y, v.y), width: abs(v.x - start.x), height: abs(v.y - start.y))
@@ -522,6 +546,8 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
         interaction = .none
         hoverTarget = nil
         switch finished {
+        case .inking:
+            ink.end()
         case let .moving(_, start, current) where hypot(current.x - start.x, current.y - start.y) > 0.5:
             doc.change("Move") { state, _ in state = preview }
         case .resizing, .resizingDecoration, .label:
@@ -601,6 +627,7 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
     override func resetCursorRects() {
         switch tool {
         case .select: addCursorRect(bounds, cursor: spaceDown ? .openHand : .arrow)
+        case .draw: addCursorRect(bounds, cursor: spaceDown ? .openHand : .crosshair)
         default: addCursorRect(bounds, cursor: .crosshair)
         }
     }
@@ -613,7 +640,8 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
         case 51, 117: // delete, forward delete
             doc.deleteSelection()
         case 53: // escape
-            if case .select = tool { select([]) } else { onToolReset() }
+            if !ink.isEmpty { ink.cancel() }
+            else if case .select = tool { select([]) } else { onToolReset() }
             interaction = .none
             needsDisplay = true
         case 49: // space
@@ -628,10 +656,18 @@ final class CanvasNSView: NSView, NSTextFieldDelegate {
             }
             let sel = doc.selection
             doc.change("Nudge") { state, parsed in Engine.move(&state, sel, by: delta, parsed: parsed, measure: appMeasurer) }
+        case 36 where !ink.isEmpty: // return → recognise now
+            ink.commit()
         case 36: // return → edit
             if doc.selection.count == 1, let r = doc.selection.first { beginInlineEdit(r) }
         default:
-            super.keyDown(with: event)
+            let plain = event.modifierFlags.intersection([.command, .control, .option]).isEmpty
+            switch (plain, event.charactersIgnoringModifiers?.lowercased()) {
+            case (true, "v"): onToolChange(.select)
+            case (true, "c"): onToolChange(.connect)
+            case (true, "d"): onToolChange(.draw)
+            default: super.keyDown(with: event)
+            }
         }
     }
 

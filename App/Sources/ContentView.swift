@@ -137,6 +137,7 @@ struct ContentView: View {
             Picker("Tool", selection: $tool) {
                 Image(systemName: "cursorarrow").tag(Tool.select).help("Select & move (V)")
                 Image(systemName: "arrow.up.right").tag(Tool.connect).help("Connect elements (C) — or ⌥-drag from an element")
+                Image(systemName: "pencil.and.outline").tag(Tool.draw).help("Draw freehand (D) — boxes, circles, diamonds, arrows and handwriting become diagram elements")
             }
             .pickerStyle(.segmented)
 

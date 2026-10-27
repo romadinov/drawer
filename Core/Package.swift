@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "DrawerCore",
-    platforms: [.macOS(.v15)],
+    platforms: [.macOS(.v15), .iOS(.v18)],
     products: [.library(name: "DrawerCore", targets: ["DrawerCore"])],
     targets: [
         .target(name: "DrawerCore"),

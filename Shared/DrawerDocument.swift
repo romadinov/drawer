@@ -199,6 +199,13 @@ final class DrawerDocument: Document {
         }
     }
 
+    /// Applies recognised freehand ink: shapes become nodes, arrows become relationships, writing becomes titles, labels or text.
+    @MainActor
+    func applyInk(_ items: [InkItem]) {
+        guard !items.isEmpty else { return }
+        change("Draw") { state, _ in InkCommit.apply(items, to: &state, measure: appMeasurer) }
+    }
+
     @MainActor
     func setStyle(_ key: String, _ body: (inout ElementStyle) -> Void) {
         change("Change Style") { state, _ in

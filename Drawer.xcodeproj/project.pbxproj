@@ -7,32 +7,48 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06E66AC5E1C0EB711252EA65 /* MobileApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8E8F668E41584C7C6DF9AC /* MobileApp.swift */; };
 		0BB284921F3D0272C9A6B2CE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C12183073679CCAAAE7E0967 /* Assets.xcassets */; };
-		16E0D817ABFFAE0EEE1D2AB0 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F44A005B800901EF1EB263FD /* Theme.swift */; };
+		0CC45A1B7C9F9F9A1243F6AE /* DiagramRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187F7873D595746A0A428BDC /* DiagramRenderer.swift */; };
 		1C3425404EAA8BF1ACA1069A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5108D66A9CCFF61C68A81523 /* ContentView.swift */; };
-		2233DF08C8C9DEA622A3A90B /* DrawerDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAA05AFF6CE2B6B14FA48F0 /* DrawerDocument.swift */; };
 		34660205AD212750D07244C5 /* DrawerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */; };
+		7A946A75CE3FDADFA4E10B0E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64759786F7ACF28092EB2F3B /* Theme.swift */; };
+		800AA7D376DE6D798A4A01AD /* DrawerDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10B05957B75E9638F894CC8 /* DrawerDocument.swift */; };
+		83981ECD6AD4AE2433C819D7 /* MobileContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4249BBACA5774D4ACA0E4DC8 /* MobileContentView.swift */; };
+		8A0A03AD006D9ADB810433B1 /* DiagramRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187F7873D595746A0A428BDC /* DiagramRenderer.swift */; };
+		8E84A8BAF32483167EC710D5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 189AE165591E3831F2CA7C9B /* Assets.xcassets */; };
 		92D2023A0BF5CB5E74D000F6 /* DrawerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0CD1AAD2B5FC40108B191679 /* DrawerCore */; };
+		951CA128F320FEEBF3CD6D6A /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64759786F7ACF28092EB2F3B /* Theme.swift */; };
 		A3F3858CC381B89AABBA3F8C /* Exporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E589DE6E6D6A894C7C5F3D08 /* Exporter.swift */; };
 		A469806B94B92EA0E786D2E6 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FABFF61B9C1C01A68D64A14 /* CanvasView.swift */; };
-		BA42264CD52C05D8557CC87A /* DiagramRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD85D510F9171BC05EC9A567 /* DiagramRenderer.swift */; };
+		A699D0907200A2D91D0BD94B /* MobileCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 612F415F0D6044A76F46DB0B /* MobileCanvasView.swift */; };
+		A76EDE9B062DCCA3837D3336 /* DrawerDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10B05957B75E9638F894CC8 /* DrawerDocument.swift */; };
+		BA183A70B551DE4A6287DA4C /* HandwritingReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */; };
+		BC6231F651BDC64ED71891CD /* DrawerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 433BC4860E5AF673F5B4CE70 /* DrawerCore */; };
 		C6D08BA0A760D33D10C14108 /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 304666E1B7A34122C639FE6D /* InspectorView.swift */; };
+		C78559171AC370F0840B3739 /* HandwritingReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */; };
 		FC382F09AFF95A28D0F7AA0E /* SpecEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A040740E0A59F71F43DEB54 /* SpecEditorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		187F7873D595746A0A428BDC /* DiagramRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramRenderer.swift; sourceTree = "<group>"; };
+		189AE165591E3831F2CA7C9B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2F5A8AA5167E216FBCD2B5A5 /* DrawerMobile.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DrawerMobile.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		304666E1B7A34122C639FE6D /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
+		4249BBACA5774D4ACA0E4DC8 /* MobileContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileContentView.swift; sourceTree = "<group>"; };
 		5108D66A9CCFF61C68A81523 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5A040740E0A59F71F43DEB54 /* SpecEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpecEditorView.swift; sourceTree = "<group>"; };
+		5B8E8F668E41584C7C6DF9AC /* MobileApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileApp.swift; sourceTree = "<group>"; };
+		612F415F0D6044A76F46DB0B /* MobileCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileCanvasView.swift; sourceTree = "<group>"; };
+		64759786F7ACF28092EB2F3B /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		9FABFF61B9C1C01A68D64A14 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		A10B05957B75E9638F894CC8 /* DrawerDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawerDocument.swift; sourceTree = "<group>"; };
 		A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawerApp.swift; sourceTree = "<group>"; };
 		AE1945B4599304CD7AB95D82 /* Drawer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Drawer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF3D9B8F9ABAB11A3589E6E3 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		C12183073679CCAAAE7E0967 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		CD85D510F9171BC05EC9A567 /* DiagramRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramRenderer.swift; sourceTree = "<group>"; };
+		D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandwritingReader.swift; sourceTree = "<group>"; };
 		E589DE6E6D6A894C7C5F3D08 /* Exporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exporter.swift; sourceTree = "<group>"; };
-		F44A005B800901EF1EB263FD /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		FBAA05AFF6CE2B6B14FA48F0 /* DrawerDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawerDocument.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +60,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		886D8C1276E3C318FB21F5F1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BC6231F651BDC64ED71891CD /* DrawerCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -52,7 +76,10 @@
 			children = (
 				FD2BE774B46A3B42CB5861CB /* Packages */,
 				7111DEC8B15AA9A1E91B3F24 /* Resources */,
+				E96781C8AEAB102674484EA2 /* Resources */,
+				5C488A6008CDD513F292B710 /* Shared */,
 				3B38C5F9B19E195D6A0CE143 /* Sources */,
+				EE5C37CDCEA2660C09C08718 /* Sources */,
 				4B40FAA91FBA611313C0CE7F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -62,11 +89,9 @@
 			children = (
 				5108D66A9CCFF61C68A81523 /* ContentView.swift */,
 				A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */,
-				FBAA05AFF6CE2B6B14FA48F0 /* DrawerDocument.swift */,
 				E589DE6E6D6A894C7C5F3D08 /* Exporter.swift */,
 				304666E1B7A34122C639FE6D /* InspectorView.swift */,
 				5A040740E0A59F71F43DEB54 /* SpecEditorView.swift */,
-				F44A005B800901EF1EB263FD /* Theme.swift */,
 				57CA1831FCD8DD9B20C83623 /* Canvas */,
 			);
 			name = Sources;
@@ -77,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				AE1945B4599304CD7AB95D82 /* Drawer.app */,
+				2F5A8AA5167E216FBCD2B5A5 /* DrawerMobile.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -85,9 +111,19 @@
 			isa = PBXGroup;
 			children = (
 				9FABFF61B9C1C01A68D64A14 /* CanvasView.swift */,
-				CD85D510F9171BC05EC9A567 /* DiagramRenderer.swift */,
 			);
 			path = Canvas;
+			sourceTree = "<group>";
+		};
+		5C488A6008CDD513F292B710 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				187F7873D595746A0A428BDC /* DiagramRenderer.swift */,
+				A10B05957B75E9638F894CC8 /* DrawerDocument.swift */,
+				D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */,
+				64759786F7ACF28092EB2F3B /* Theme.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		7111DEC8B15AA9A1E91B3F24 /* Resources */ = {
@@ -97,6 +133,26 @@
 			);
 			name = Resources;
 			path = App/Resources;
+			sourceTree = "<group>";
+		};
+		E96781C8AEAB102674484EA2 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				189AE165591E3831F2CA7C9B /* Assets.xcassets */,
+			);
+			name = Resources;
+			path = Mobile/Resources;
+			sourceTree = "<group>";
+		};
+		EE5C37CDCEA2660C09C08718 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				5B8E8F668E41584C7C6DF9AC /* MobileApp.swift */,
+				612F415F0D6044A76F46DB0B /* MobileCanvasView.swift */,
+				4249BBACA5774D4ACA0E4DC8 /* MobileContentView.swift */,
+			);
+			name = Sources;
+			path = Mobile/Sources;
 			sourceTree = "<group>";
 		};
 		FD2BE774B46A3B42CB5861CB /* Packages */ = {
@@ -110,6 +166,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		60DAE40EC3A1F79561CAB8AD /* DrawerMobile */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 871D0AF1A5EC664F8B4FC318 /* Build configuration list for PBXNativeTarget "DrawerMobile" */;
+			buildPhases = (
+				4516F1C58E7419D5D292AED9 /* Sources */,
+				7B325B314A2AE15C75030A92 /* Resources */,
+				886D8C1276E3C318FB21F5F1 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DrawerMobile;
+			packageProductDependencies = (
+				433BC4860E5AF673F5B4CE70 /* DrawerCore */,
+			);
+			productName = DrawerMobile;
+			productReference = 2F5A8AA5167E216FBCD2B5A5 /* DrawerMobile.app */;
+			productType = "com.apple.product-type.application";
+		};
 		DF66964A53068F68040C5468 /* Drawer */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A9C9F304F3A87C56B7678960 /* Build configuration list for PBXNativeTarget "Drawer" */;
@@ -139,6 +215,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					60DAE40EC3A1F79561CAB8AD = {
+						ProvisioningStyle = Automatic;
+					};
 					DF66964A53068F68040C5468 = {
 						ProvisioningStyle = Manual;
 					};
@@ -162,11 +241,20 @@
 			projectRoot = "";
 			targets = (
 				DF66964A53068F68040C5468 /* Drawer */,
+				60DAE40EC3A1F79561CAB8AD /* DrawerMobile */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7B325B314A2AE15C75030A92 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8E84A8BAF32483167EC710D5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D37AB9A5B29F8D0D32C65F40 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -184,23 +272,57 @@
 			files = (
 				A469806B94B92EA0E786D2E6 /* CanvasView.swift in Sources */,
 				1C3425404EAA8BF1ACA1069A /* ContentView.swift in Sources */,
-				BA42264CD52C05D8557CC87A /* DiagramRenderer.swift in Sources */,
+				0CC45A1B7C9F9F9A1243F6AE /* DiagramRenderer.swift in Sources */,
 				34660205AD212750D07244C5 /* DrawerApp.swift in Sources */,
-				2233DF08C8C9DEA622A3A90B /* DrawerDocument.swift in Sources */,
+				800AA7D376DE6D798A4A01AD /* DrawerDocument.swift in Sources */,
 				A3F3858CC381B89AABBA3F8C /* Exporter.swift in Sources */,
+				BA183A70B551DE4A6287DA4C /* HandwritingReader.swift in Sources */,
 				C6D08BA0A760D33D10C14108 /* InspectorView.swift in Sources */,
 				FC382F09AFF95A28D0F7AA0E /* SpecEditorView.swift in Sources */,
-				16E0D817ABFFAE0EEE1D2AB0 /* Theme.swift in Sources */,
+				951CA128F320FEEBF3CD6D6A /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4516F1C58E7419D5D292AED9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8A0A03AD006D9ADB810433B1 /* DiagramRenderer.swift in Sources */,
+				A76EDE9B062DCCA3837D3336 /* DrawerDocument.swift in Sources */,
+				C78559171AC370F0840B3739 /* HandwritingReader.swift in Sources */,
+				06E66AC5E1C0EB711252EA65 /* MobileApp.swift in Sources */,
+				A699D0907200A2D91D0BD94B /* MobileCanvasView.swift in Sources */,
+				83981ECD6AD4AE2433C819D7 /* MobileContentView.swift in Sources */,
+				7A946A75CE3FDADFA4E10B0E /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		597454ACB24BA112FE87C8C5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Mobile/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.romadinov.drawer.mobile;
+				PRODUCT_NAME = Drawer;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		787675387F0FBFBE55F25E00 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -231,6 +353,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -242,13 +365,16 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -257,6 +383,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -287,6 +414,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -304,14 +432,17 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -323,20 +454,15 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.romadinov.drawer;
 				PRODUCT_NAME = Drawer;
 				SDKROOT = macosx;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -347,22 +473,35 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.romadinov.drawer;
 				PRODUCT_NAME = Drawer;
 				SDKROOT = macosx;
-				SWIFT_STRICT_CONCURRENCY = minimal;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
+		};
+		F4CC64BD72E0392F0DB79EEB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Mobile/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.romadinov.drawer.mobile;
+				PRODUCT_NAME = Drawer;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
@@ -372,6 +511,15 @@
 			buildConfigurations = (
 				919075A84E775BE84B3C850E /* Debug */,
 				787675387F0FBFBE55F25E00 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		871D0AF1A5EC664F8B4FC318 /* Build configuration list for PBXNativeTarget "DrawerMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				597454ACB24BA112FE87C8C5 /* Debug */,
+				F4CC64BD72E0392F0DB79EEB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -396,6 +544,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		0CD1AAD2B5FC40108B191679 /* DrawerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DrawerCore;
+		};
+		433BC4860E5AF673F5B4CE70 /* DrawerCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DrawerCore;
 		};

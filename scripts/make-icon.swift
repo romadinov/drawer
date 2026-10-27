@@ -3,9 +3,11 @@ import ImageIO
 import UniformTypeIdentifiers
 // Draws the Drawer app icon in the Uberdoer style: dark navy squircle with a blue rim glow,
 // glossy stacked blue sheets, and a glowing cyan→green diagram on the top sheet.
-// Usage: swift make-icon.swift <AppIcon.appiconset dir>
+// Usage: swift make-icon.swift <AppIcon.appiconset dir> [--ios]
+// --ios writes a single full-bleed, opaque 1024 icon (iOS applies its own corner mask).
 
 let out = CommandLine.arguments[1]
+let ios = CommandLine.arguments.contains("--ios")
 let space = CGColorSpace(name: CGColorSpace.sRGB)!
 func rgb(_ hex: UInt32, _ a: CGFloat = 1) -> CGColor {
     CGColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: a)
@@ -109,6 +111,11 @@ func render(_ size: Int) -> CGImage {
                         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
     ctx.interpolationQuality = .high
     let s = CGFloat(size)
+    if ios {
+        ctx.setFillColor(rgb(0x0F1428)); ctx.fill(CGRect(x: 0, y: 0, width: s, height: s))
+        drawIcon(ctx, shape: CGRect(x: 0, y: 0, width: s, height: s))
+        return ctx.makeImage()!
+    }
     let shape = s * 824 / 1024
     drawIcon(ctx, shape: CGRect(x: (s - shape) / 2, y: (s - shape) / 2, width: shape, height: shape))
     return ctx.makeImage()!
@@ -121,7 +128,12 @@ func write(_ cg: CGImage, _ name: String) {
 }
 
 var images: [[String: String]] = []
-for (pt, scales) in [(16, [1, 2]), (32, [1, 2]), (128, [1, 2]), (256, [1, 2]), (512, [1, 2])] {
+if ios {
+    write(render(1024), "ios-1024.png")
+    images.append(["filename": "ios-1024.png", "idiom": "universal", "platform": "ios", "size": "1024x1024"])
+}
+let macSizes: [(Int, [Int])] = ios ? [] : [(16, [1, 2]), (32, [1, 2]), (128, [1, 2]), (256, [1, 2]), (512, [1, 2])]
+for (pt, scales) in macSizes {
     for sc in scales {
         let px = pt * sc
         let name = "mac-\(px).png"
