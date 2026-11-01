@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="508" height="972" viewBox="10 10 508 972">
+<metadata><drawer:diagram xmlns:drawer="https://github.com/romadinov/drawer" encoding="base64">eyJkZWNvcmF0aW9ucyI6W10sImVkZ2VMYXlvdXQiOnt9LCJsYW5ndWFnZSI6InBsYW50VU1MIiwibGF5b3V0Ijp7fSwic3BlYyI6IkBzdGFydHVtbFxucGFja2FnZSBPcmRlcmluZyB7XG4gIGFic3RyYWN0IGNsYXNzIEVudGl0eSB7XG4gICAgK2lkIDogVVVJRFxuICAgICtjcmVhdGVkQXQgOiBEYXRlXG4gIH1cbiAgY2xhc3MgT3JkZXIge1xuICAgICtzdGF0dXMgOiBPcmRlclN0YXR1c1xuICAgICt0b3RhbCgpIDogTW9uZXlcbiAgICArc3VibWl0KClcbiAgfVxuICBjbGFzcyBPcmRlckxpbmUge1xuICAgICtxdWFudGl0eSA6IEludFxuICAgICtwcmljZSA6IE1vbmV5XG4gIH1cbn1cbmVudW0gT3JkZXJTdGF0dXMge1xuICBEUkFGVFxuICBTVUJNSVRURURcbiAgU0hJUFBFRFxufVxuaW50ZXJmYWNlIFJlcG9zaXRvcnkge1xuICArc2F2ZShvcmRlciA6IE9yZGVyKVxuICArZmluZChpZCA6IFVVSUQpIDogT3JkZXJcbn1cbmNsYXNzIFNxbFJlcG9zaXRvcnlcblxuRW50aXR5IDx8LS0gT3JkZXJcbk9yZGVyIFwiMVwiICotLSBcIm1hbnlcIiBPcmRlckxpbmUgOiBjb250YWluc1xuT3JkZXIgLS0+IE9yZGVyU3RhdHVzXG5SZXBvc2l0b3J5IDx8Li4gU3FsUmVwb3NpdG9yeVxuU3FsUmVwb3NpdG9yeSAuLj4gT3JkZXIgOiBwZXJzaXN0c1xuQGVuZHVtbFxuIiwic3R5bGVzIjp7fX0=</drawer:diagram></metadata>
+<rect x="10" y="10" width="508" height="972" fill="#FFFFFF"/>
+<path d="M274 952C269.58 952 266 948.42 266 944L266 264C266 259.58 269.58 256 274 256L480 256C484.42 256 488 259.58 488 264L488 944C488 948.42 484.42 952 480 952ZM274 952" fill="#000000" fill-opacity="0.03"/>
+<path d="M274 952C269.58 952 266 948.42 266 944L266 264C266 259.58 269.58 256 274 256L480 256C484.42 256 488 259.58 488 264L488 944C488 948.42 484.42 952 480 952ZM274 952" fill="none" stroke="#737373" stroke-width="1.20" stroke-dasharray="7 4"/>
+<text x="278" y="275" font-size="12" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1F1F1F" font-weight="600" xml:space="preserve">Ordering</text>
+<path d="M377.40 403L377.10 560" fill="none" stroke="#4D4D4D" stroke-width="1.30" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M377.42 390L369.90 402.99L384.90 403.01ZM377.42 390" fill="#F9F9FA"/>
+<path d="M377.42 390L369.90 402.99L384.90 403.01ZM377.42 390" fill="none" stroke="#4D4D4D" stroke-width="1.30"/>
+<path d="M377.12 676L377.42 844" fill="none" stroke="#4D4D4D" stroke-width="1.30" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M377.09 660L371.61 668.01L377.12 676L382.61 667.99ZM377.09 660" fill="#4D4D4D"/>
+<path d="M377.09 660L371.61 668.01L377.12 676L382.61 667.99ZM377.09 660" fill="none" stroke="#4D4D4D" stroke-width="1.30"/>
+<path d="M353.76 759.50C351.55 759.50 349.76 757.71 349.76 755.50L349.76 748.50C349.76 746.29 351.55 744.50 353.76 744.50L400.76 744.50C402.97 744.50 404.76 746.29 404.76 748.50L404.76 755.50C404.76 757.71 402.97 759.50 400.76 759.50ZM353.76 759.50" fill="#F9F9FA" fill-opacity="0.92"/>
+<text x="354.98" y="756.50" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000" fill-opacity="0.85" xml:space="preserve">contains</text>
+<text x="362.65" y="685.52" font-size="10.50" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000" fill-opacity="0.50" xml:space="preserve">1</text>
+<text x="375.92" y="825.48" font-size="10.50" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000" fill-opacity="0.50" xml:space="preserve">many</text>
+<path d="M326.82 660L156.20 830" fill="none" stroke="#4D4D4D" stroke-width="1.30" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M168.23 826.49L156.20 830L159.76 817.99" fill="none" stroke="#4D4D4D" stroke-width="1.30"/>
+<path d="M217.77 147.21L115.25 322" fill="none" stroke="#4D4D4D" stroke-width="1.30" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M224.35 136L211.30 143.42L224.24 151.01ZM224.35 136" fill="#F9F9FA"/>
+<path d="M224.35 136L211.30 143.42L224.24 151.01ZM224.35 136" fill="none" stroke="#4D4D4D" stroke-width="1.30"/>
+<path d="M127.49 374L324.14 560" fill="none" stroke="#4D4D4D" stroke-width="1.30" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M320.27 548.08L324.14 560L312.02 556.80" fill="none" stroke="#4D4D4D" stroke-width="1.30"/>
+<path d="M203.81 474.50C201.60 474.50 199.81 472.71 199.81 470.50L199.81 463.50C199.81 461.29 201.60 459.50 203.81 459.50L247.81 459.50C250.02 459.50 251.81 461.29 251.81 463.50L251.81 470.50C251.81 472.71 250.02 474.50 247.81 474.50ZM203.81 474.50" fill="#F9F9FA" fill-opacity="0.92"/>
+<text x="205.10" y="471.50" font-size="11" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#000000" fill-opacity="0.85" xml:space="preserve">persists</text>
+<path d="M308 390C306.34 390 305 388.66 305 387L305 309C305 307.34 306.34 306 308 306L447 306C448.66 306 450 307.34 450 309L450 387C450 388.66 448.66 390 447 390ZM308 390" fill="#FFFBEA"/>
+<path d="M308 390C306.34 390 305 388.66 305 387L305 309C305 307.34 306.34 306 308 306L447 306C448.66 306 450 307.34 450 309L450 387C450 388.66 448.66 390 447 390ZM308 390" fill="none" stroke="#A38A3A" stroke-width="1.20"/>
+<text x="359.11" y="325" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1F1F1F" font-weight="600" font-style="italic" xml:space="preserve">Entity</text>
+<path d="M305 334L450 334" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<text x="317" y="351" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+id : UUID</text>
+<text x="317" y="367" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+createdAt : Date</text>
+<path d="M305 378L450 378" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<path d="M293 660C291.34 660 290 658.66 290 657L290 563C290 561.34 291.34 560 293 560L461 560C462.66 560 464 561.34 464 563L464 657C464 658.66 462.66 660 461 660ZM293 660" fill="#FFFBEA"/>
+<path d="M293 660C291.34 660 290 658.66 290 657L290 563C290 561.34 291.34 560 293 560L461 560C462.66 560 464 561.34 464 563L464 657C464 658.66 462.66 660 461 660ZM293 660" fill="none" stroke="#A38A3A" stroke-width="1.20"/>
+<text x="358.82" y="579" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1F1F1F" font-weight="600" xml:space="preserve">Order</text>
+<path d="M290 588L464 588" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<text x="302" y="605" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+status : OrderStatus</text>
+<path d="M290 616L464 616" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<text x="302" y="633" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+total() : Money</text>
+<text x="302" y="649" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+submit()</text>
+<path d="M315 928C313.34 928 312 926.66 312 925L312 847C312 845.34 313.34 844 315 844L440 844C441.66 844 443 845.34 443 847L443 925C443 926.66 441.66 928 440 928ZM315 928" fill="#FFFBEA"/>
+<path d="M315 928C313.34 928 312 926.66 312 925L312 847C312 845.34 313.34 844 315 844L440 844C441.66 844 443 845.34 443 847L443 925C443 926.66 441.66 928 440 928ZM315 928" fill="none" stroke="#A38A3A" stroke-width="1.20"/>
+<text x="346.09" y="863" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1F1F1F" font-weight="600" xml:space="preserve">OrderLine</text>
+<path d="M312 872L443 872" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<text x="324" y="889" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+quantity : Int</text>
+<text x="324" y="905" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+price : Money</text>
+<path d="M312 916L443 916" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<path d="M43 942C41.34 942 40 940.66 40 939L40 833C40 831.34 41.34 830 43 830L157 830C158.66 830 160 831.34 160 833L160 939C160 940.66 158.66 942 157 942ZM43 942" fill="#FFFBEA"/>
+<path d="M43 942C41.34 942 40 940.66 40 939L40 833C40 831.34 41.34 830 43 830L157 830C158.66 830 160 831.34 160 833L160 939C160 940.66 158.66 942 157 942ZM43 942" fill="none" stroke="#A38A3A" stroke-width="1.20"/>
+<text x="61.49" y="846" font-size="10.50" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#616161" xml:space="preserve">«enumeration»</text>
+<text x="61.33" y="861" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1F1F1F" font-weight="600" xml:space="preserve">OrderStatus</text>
+<path d="M40 870L160 870" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<text x="52" y="887" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">DRAFT</text>
+<text x="52" y="903" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">SUBMITTED</text>
+<text x="52" y="919" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">SHIPPED</text>
+<path d="M40 930L160 930" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<path d="M158 136C156.34 136 155 134.66 155 133L155 43C155 41.34 156.34 40 158 40L347 40C348.66 40 350 41.34 350 43L350 133C350 134.66 348.66 136 347 136ZM158 136" fill="#FFFBEA"/>
+<path d="M158 136C156.34 136 155 134.66 155 133L155 43C155 41.34 156.34 40 158 40L347 40C348.66 40 350 41.34 350 43L350 133C350 134.66 348.66 136 347 136ZM158 136" fill="none" stroke="#A38A3A" stroke-width="1.20"/>
+<text x="223.01" y="56" font-size="10.50" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#616161" xml:space="preserve">«interface»</text>
+<text x="218.32" y="71" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1F1F1F" font-weight="600" xml:space="preserve">Repository</text>
+<path d="M155 80L350 80" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<path d="M155 92L350 92" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<text x="167" y="109" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+save(order : Order)</text>
+<text x="167" y="125" font-size="11.50" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" fill="#1F1F1F" xml:space="preserve">+find(id : UUID) : Order</text>
+<path d="M43 374C41.34 374 40 372.66 40 371L40 325C40 323.34 41.34 322 43 322L157 322C158.66 322 160 323.34 160 325L160 371C160 372.66 158.66 374 157 374ZM43 374" fill="#FFFBEA"/>
+<path d="M43 374C41.34 374 40 372.66 40 371L40 325C40 323.34 41.34 322 43 322L157 322C158.66 322 160 323.34 160 325L160 371C160 372.66 158.66 374 157 374ZM43 374" fill="none" stroke="#A38A3A" stroke-width="1.20"/>
+<text x="55.70" y="341" font-size="13" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#1F1F1F" font-weight="600" xml:space="preserve">SqlRepository</text>
+<path d="M40 350L160 350" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+<path d="M40 362L160 362" fill="none" stroke="#A38A3A" stroke-width="0.96"/>
+</svg>
