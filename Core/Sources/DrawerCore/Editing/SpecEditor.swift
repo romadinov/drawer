@@ -282,7 +282,8 @@ public struct SpecEditor {
             let identifierNamed = node.titleIsIdentifier && !node.kind.isC4 && node.kind != .boundary
             if identifierNamed, SpecEmitter.isIdentifier(title, allowHyphen: emitter.allowsHyphenInIDs), parsed.node(title) == nil,
                !(language == .mermaid && parsed.family == .flowchart) {
-                renameIdentifier(id, to: title)
+                // Only where the spec uses it as this element — never inside other titles or keywords.
+                if !renameReferences(id, to: title) { renameIdentifier(id, to: title) }
                 currentID = title
                 node.id = title
                 node.title = title
@@ -352,6 +353,34 @@ public struct SpecEditor {
     }
 
     /// Renames an identifier everywhere it appears as a whole word.
+    /// Renames an element's id only where the parser saw it used as that element (declaration, relationships),
+    /// never in other words that happen to match — `Container(Container, …)` keeps its macro name.
+    /// Returns false if the spec doesn't record those places (then nothing is changed).
+    @discardableResult
+    public mutating func renameReferences(_ old: String, to new: String) -> Bool {
+        guard let node = parsed.node(old) else { return false }
+        let ns = spec as NSString
+        let macros: Set<String> = ["Person", "Person_Ext", "System", "System_Ext", "SystemDb", "SystemDb_Ext", "SystemQueue", "Container",
+                                   "Container_Ext", "ContainerDb", "ContainerDb_Ext", "ContainerQueue", "Component", "Component_Ext",
+                                   "ComponentDb", "ComponentQueue", "Boundary", "System_Boundary", "Container_Boundary", "Enterprise_Boundary"]
+        let word = NSRegularExpression("(?<![\\w])" + NSRegularExpression.escapedPattern(for: old) + "(?![\\w])")
+        var ranges: [NSRange] = []
+        for span in node.referenceSpans where span.end <= ns.length {
+            if ns.substring(with: span.nsRange) == old { ranges.append(span.nsRange); continue }
+            // A whole declaration line: the id is the first standalone occurrence outside quotes that isn't a macro name.
+            for m in word.matches(in: spec, range: span.nsRange) {
+                let before = ns.substring(with: NSRange(location: span.location, length: m.range.location - span.location))
+                let inQuotes = before.filter { $0 == "\"" }.count % 2 == 1
+                let callsMacro = macros.contains(old) && m.range.upperBound < ns.length && ns.character(at: m.range.upperBound) == 40 // "("
+                if !inQuotes && !callsMacro { ranges.append(m.range); break }
+            }
+        }
+        guard !ranges.isEmpty else { return false }
+        var seen = Set<Int>()
+        apply(ranges.filter { seen.insert($0.location).inserted }.map { Replacement(range: $0, text: new) })
+        return parsed.node(new) != nil && parsed.node(old) == nil
+    }
+
     public mutating func renameIdentifier(_ old: String, to new: String) {
         let escaped = NSRegularExpression.escapedPattern(for: old)
         let pattern = #"(?<![\w])(?<!\w-)"# + escaped + #"(?![\w])(?!-\w)"#

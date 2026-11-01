@@ -338,4 +338,28 @@ extension Pen {
         #expect(kinds(InkRecognizer.recognize([tailed])) == ["rectangle"])
         if case let .shape(_, r) = InkRecognizer.recognize([tailed]).first { #expect(r.minX > -10, "\(r)") }
     }
+
+    @Test func namingADrawnElementRenamesItsPlaceholderID() {
+        let cases: [(SpecLanguage, DiagramFamily)] = [(.plantUML, .c4), (.mermaid, .c4), (.mermaid, .flowchart), (.plantUML, .flowchart), (.plantUML, .classDiagram)]
+        for (language, family) in cases {
+            var state = DrawingState(language: language, spec: DiagramStarter.blankSpec(family, language: language))
+            InkCommit.apply([.shape(.rectangle, Rect(x: 0, y: 0, width: 160, height: 80))], to: &state)
+            InkCommit.apply([.shape(.rectangle, Rect(x: 400, y: 0, width: 160, height: 80))], to: &state)
+            let p = SpecParser.parse(state.spec, language: language)
+            let a = p.nodes[0].id, b = p.nodes[1].id
+            let g = DiagramGeometry(parsed: p, state: state, measure: approximateMeasurer)
+            InkCommit.apply([.connector(from: g.frames[a]!.center, to: g.frames[b]!.center, headAtStart: false, headAtEnd: true)], to: &state)
+            let first = Engine.updateNode(&state, id: a, NodeEdit(title: "Payments"))
+            let second = Engine.updateNode(&state, id: b, NodeEdit(title: "Ledger DB"))
+            let q = SpecParser.parse(state.spec, language: language)
+            #expect(first == "Payments" && second == "LedgerDB", "\(language) \(family): \(state.spec)")
+            #expect(q.node("Payments")?.title == "Payments" && q.node("LedgerDB")?.title == "Ledger DB", "\(language) \(family): \(state.spec)")
+            #expect(q.edges.count == 1 && q.edges[0].from == "Payments" && q.edges[0].to == "LedgerDB", "\(language) \(family): \(state.spec)")
+            #expect(q.diagnostics.isEmpty, "\(language) \(family): \(q.diagnostics) \(state.spec)")
+            #expect(state.layout["Payments"] != nil && state.layout[a] == nil)
+        }
+        // A real id is never touched by a rename.
+        var c4 = DrawingState(language: .plantUML, spec: "@startuml\n!include <C4/C4_Container>\nContainer(api, \"API\")\n@enduml\n")
+        #expect(Engine.updateNode(&c4, id: "api", NodeEdit(title: "Gateway")) == "api")
+    }
 }

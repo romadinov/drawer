@@ -124,6 +124,22 @@ final class VoiceControl {
         #endif
     }
 
+    #if DEBUG
+    /// Demo recording: shows `text` arriving word by word as if spoken, then carries it out.
+    func debugSimulate(_ text: String) async {
+        isListening = true
+        transcript = ""
+        feedback = nil
+        for word in text.split(separator: " ") {
+            transcript += (transcript.isEmpty ? "" : " ") + word
+            try? await Task.sleep(for: .milliseconds(230))
+        }
+        try? await Task.sleep(for: .milliseconds(600))
+        isListening = false
+        execute(transcript)
+    }
+    #endif
+
     func execute(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { show("Didn’t hear anything. Try “\(Self.examples.randomElement()!)”."); return }

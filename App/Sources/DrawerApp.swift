@@ -10,6 +10,10 @@ struct DrawerApp: App {
             MainActor.assumeIsolated { HeadlessExport.run(input: args[i + 1], output: args[i + 2]) }
         }
         #if DEBUG
+        if let i = args.firstIndex(of: "--record-demo"), args.count > i + 1 {
+            let dir = args[i + 1]
+            MainActor.assumeIsolated { MacDemo.start(dir: dir) }
+        }
         if let i = args.firstIndex(of: "--replay-ink"), args.count > i + 1 {
             let out = args[i + 1]
             MainActor.assumeIsolated { DebugReplay.start(output: out) }

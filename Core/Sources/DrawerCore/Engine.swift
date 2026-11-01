@@ -72,7 +72,13 @@ public enum Engine {
            node.title == node.kind.displayName || (node.title == "Person" && [.actor, .person, .personExt].contains(node.kind)) {
             edit.title = kind.displayName
         }
-        let newID = editor.update(node: id, edit)
+        let before = editor.parsed.node(id)
+        var newID = editor.update(node: id, edit)
+        // An id that came from a placeholder name ("Container", "Container2") follows the real name ("Payments").
+        if newID == id, let before, let title = edit.title, title != before.title, isPlaceholderID(id, title: before.title, kind: before.kind) {
+            let candidate = editor.uniqueID(for: title)
+            if candidate != id, editor.renameReferences(id, to: candidate) { newID = candidate }
+        }
         state.spec = editor.spec
         if newID != id { migrateID(&state, from: id, to: newID) }
         // A user-sized node that changed content keeps its size; intrinsic ones re-measure automatically.
@@ -93,6 +99,12 @@ public enum Engine {
             if let s = state.styles.removeValue(forKey: "edge:" + id) { state.styles["edge:" + newID] = s }
         }
         reconcile(&state, measure: measure)
+    }
+
+    static func isPlaceholderID(_ id: String, title: String, kind: NodeKind) -> Bool {
+        let placeholder = title == kind.displayName || title == "Person"
+        let base = title.components(separatedBy: CharacterSet.alphanumerics.inverted).joined()
+        return placeholder && id.range(of: "^" + NSRegularExpression.escapedPattern(for: base) + "[0-9]*$", options: [.regularExpression, .caseInsensitive]) != nil
     }
 
     static func migrateID(_ state: inout DrawingState, from old: String, to new: String) {

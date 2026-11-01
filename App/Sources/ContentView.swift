@@ -47,6 +47,12 @@ struct ContentView: View {
             } onCancel: { showTemplates = false }
         }
         .onAppear {
+            #if DEBUG
+            NotificationCenter.default.addObserver(forName: .drawerDebugVoice, object: nil, queue: .main) { [voice] note in
+                let text = note.object as? String ?? ""
+                MainActor.assumeIsolated { Task { await voice.debugSimulate(text) } }
+            }
+            #endif
             voice.document = document
             voice.onAppAction = { action in
                 switch action {

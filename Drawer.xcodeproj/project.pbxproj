@@ -40,6 +40,7 @@
 		C78559171AC370F0840B3739 /* HandwritingReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */; };
 		C99FC8AAE7271BCE6F5CBD84 /* SVGSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72BAAB3A390532F069E573B /* SVGSurface.swift */; };
 		C9A2D7F9C32673A92FD6B1C1 /* DemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A35CF46B4C710D76A328D53 /* DemoTests.swift */; };
+		E3BF370F5D8A0E47025B73A9 /* MacDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7023BEF4DCD2A9CDDC09D89 /* MacDemo.swift */; };
 		FC382F09AFF95A28D0F7AA0E /* SpecEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A040740E0A59F71F43DEB54 /* SpecEditorView.swift */; };
 /* End PBXBuildFile section */
 
@@ -78,6 +79,7 @@
 		C12183073679CCAAAE7E0967 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C4B46F880920F85E8264F568 /* ChoiceBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChoiceBar.swift; sourceTree = "<group>"; };
 		CC0E1143C0E9AE7E9681429E /* WalkthroughTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkthroughTests.swift; sourceTree = "<group>"; };
+		D7023BEF4DCD2A9CDDC09D89 /* MacDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacDemo.swift; sourceTree = "<group>"; };
 		D83D21769B32C1D2F5EC1FC0 /* HandwritingReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandwritingReader.swift; sourceTree = "<group>"; };
 		E589DE6E6D6A894C7C5F3D08 /* Exporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exporter.swift; sourceTree = "<group>"; };
 		F72BAAB3A390532F069E573B /* SVGSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGSurface.swift; sourceTree = "<group>"; };
@@ -135,6 +137,7 @@
 				A8513E43E30371B3AC1C8F31 /* DrawerApp.swift */,
 				E589DE6E6D6A894C7C5F3D08 /* Exporter.swift */,
 				304666E1B7A34122C639FE6D /* InspectorView.swift */,
+				D7023BEF4DCD2A9CDDC09D89 /* MacDemo.swift */,
 				5A040740E0A59F71F43DEB54 /* SpecEditorView.swift */,
 				57CA1831FCD8DD9B20C83623 /* Canvas */,
 			);
@@ -365,6 +368,7 @@
 				A3F3858CC381B89AABBA3F8C /* Exporter.swift in Sources */,
 				BA183A70B551DE4A6287DA4C /* HandwritingReader.swift in Sources */,
 				C6D08BA0A760D33D10C14108 /* InspectorView.swift in Sources */,
+				E3BF370F5D8A0E47025B73A9 /* MacDemo.swift in Sources */,
 				5C80FDACC497E3D2E083F917 /* NewDiagramView.swift in Sources */,
 				C99FC8AAE7271BCE6F5CBD84 /* SVGSurface.swift in Sources */,
 				FC382F09AFF95A28D0F7AA0E /* SpecEditorView.swift in Sources */,

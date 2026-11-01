@@ -1,0 +1,10 @@
+[
+  {"id": "m01_intro", "text": "This is Drawer on the Mac. The spec lives on the left, the drawing in the middle, and the inspector on the right."},
+  {"id": "m02_example", "text": "Start from an example. Here's a C4 container diagram for an internet bank, written in PlantUML."},
+  {"id": "m03_sync", "text": "Select anything in the drawing, and its line lights up in the spec. Drag it, and only the layout changes. The spec stays clean."},
+  {"id": "m04_type", "text": "Type in the spec, with completion for macros, names and arrows, and the drawing follows as you type."},
+  {"id": "m05_sketch", "text": "Or just sketch. Draw a box, tell Drawer what it is, give it a name, and draw a line to connect it."},
+  {"id": "m06_voice", "text": "Your voice works too. Add a database called ledger, then connect payments to it."},
+  {"id": "m07_convert", "text": "One click converts the whole diagram between PlantUML and Mermaid. And PNG or SVG exports keep the editable diagram inside."},
+  {"id": "m08_outro", "text": "Auto layout tidies it up. Drawer. Sketch it, or write it. It stays in sync."}
+]

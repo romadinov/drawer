@@ -14,9 +14,9 @@ edit either one and the other follows.
 ![iPadOS 27](https://img.shields.io/badge/iPadOS-27-111?logo=apple)
 ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white)
 
-<img src="docs/media/demo.gif" width="420" alt="Sketching a C4 diagram on iPad: boxes become a software system and a database, a line becomes a relationship, and the spec updates as you type">
+<img src="docs/media/mac-demo.gif" width="800" alt="Drawer on the Mac: a C4 example, selecting and dragging an element, typing in the spec with completion, sketching a box that becomes a container, a voice command, converting to Mermaid and auto layout">
 
-**[▶ Watch the narrated demo (1:40)](https://github.com/romadinov/drawer/releases/download/v0.3.0/Drawer-demo.mp4)**
+**▶ Narrated demos: [Mac (1:04)](https://github.com/romadinov/drawer/releases/download/v0.3.0/Drawer-mac-demo.mp4) · [iPad (1:40)](https://github.com/romadinov/drawer/releases/download/v0.3.0/Drawer-demo.mp4)**
 
 </div>
 
@@ -70,6 +70,19 @@ later, change it, and it saves back to the same file.
 
 <sub>These three SVGs were exported by Drawer — open any of them in Drawer to keep editing.</sub>
 
+## On the iPad
+
+<img align="right" src="docs/media/demo.gif" width="300" alt="Sketching a C4 diagram on iPad: boxes become a software system and a database, a line becomes a relationship, and the spec updates as you type">
+
+The companion app opens the same `.drawer` files from Files and iCloud Drive.
+
+- **Apple Pencil first** — the Pencil always draws, fingers select and pan; an eraser, and Pencil double-tap to switch tools.
+- **Floating tool palette** with an Add palette per diagram type.
+- **Spec side by side**, with suggestions above the keyboard.
+- **Share** diagrams as editable PNG or SVG.
+
+<br clear="right">
+
 ## And more
 
 - **Voice commands** — "add a database called orders", "connect web app to orders labelled reads",
@@ -80,7 +93,6 @@ later, change it, and it saves back to the same file.
   colours and free-form annotations that live only in the drawing.
 - **Sequence diagrams** with activations, `alt`/`loop`/`opt`/`par` fragments, notes, dividers and autonumbering;
   drag a lifeline sideways or a message up and down.
-- **iPad companion** with a floating tool palette, Pencil-only drawing, an eraser and Pencil double-tap.
 
 ## Install
 
@@ -123,5 +135,7 @@ Drawer.app/Contents/MacOS/Drawer --ink sketch.drawer recognised.drawer # recogni
 | `App/` | The macOS app (AppKit canvas, spec editor, inspector). |
 | `Mobile/` | The iPad/iPhone app and its UI tests, including the script that records the demo above. |
 
-The demo video is reproducible: `Mobile/UITests/DemoTests.swift` drives the app scene by scene, timed to the
-narration in `docs/demo/narration.json`, and `docs/demo/record.sh` records it.
+Both demo videos are reproducible. On iPad, `Mobile/UITests/DemoTests.swift` drives the app scene by scene, timed to
+the narration in `docs/demo/narration.json`, and `docs/demo/record.sh` records it. On the Mac, a debug build run with
+`--record-demo DIR` plays `App/Sources/MacDemo.swift`, timed to `docs/demo/mac-narration.json`, and records its own
+windows frame by frame.
