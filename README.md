@@ -96,7 +96,7 @@ The companion app opens the same `.drawer` files from Files and iCloud Drive.
 
 ## Install
 
-**Mac:** download `Drawer-0.3.dmg` from the [latest release](https://github.com/romadinov/drawer/releases/latest),
+**Mac:** download `Drawer-0.3.1.dmg` from the [latest release](https://github.com/romadinov/drawer/releases/latest),
 open it and drag Drawer to Applications. Requires macOS 27 on Apple silicon. The app is signed but not notarized, so
 the first time right-click it and choose **Open**.
 
