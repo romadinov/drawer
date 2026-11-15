@@ -47,6 +47,18 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Excalidraw Drawing</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.excalidraw.excalidraw</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>Drawer Diagram</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -56,6 +68,30 @@
 			<array>
 				<string>com.romadinov.drawer.diagram</string>
 			</array>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.excalidraw.excalidraw</string>
+			<key>UTTypeDescription</key>
+			<string>Excalidraw Drawing</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>excalidraw</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.excalidraw+json</string>
+				</array>
+			</dict>
 		</dict>
 	</array>
 	<key>UTExportedTypeDeclarations</key>

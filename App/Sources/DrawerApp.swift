@@ -14,6 +14,10 @@ struct DrawerApp: App {
             let dir = args[i + 1]
             MainActor.assumeIsolated { MacDemo.start(dir: dir) }
         }
+        if let i = args.firstIndex(of: "--snapshot-windows"), args.count > i + 1 {
+            let dir = args[i + 1]
+            MainActor.assumeIsolated { DebugReplay.snapshotWindows(to: dir) }
+        }
         if let i = args.firstIndex(of: "--replay-ink"), args.count > i + 1 {
             let out = args[i + 1]
             MainActor.assumeIsolated { DebugReplay.start(output: out) }
@@ -53,8 +57,12 @@ struct DiagramCommands: Commands {
                 .disabled(document == nil)
             Button("Export PDF…") { if let d = document { Exporter.exportImage(d, format: .pdf) } }
                 .disabled(document == nil)
+            Button("Export Excalidraw…") { if let d = document { Exporter.exportImage(d, format: .excalidraw) } }
+                .disabled(document == nil)
             Button("Copy Diagram as Image") { if let d = document { Exporter.copyPNG(d) } }
                 .keyboardShortcut("c", modifiers: [.command, .option])
+                .disabled(document == nil)
+            Button("Copy for Excalidraw") { if let d = document { Exporter.copyForExcalidraw(d) } }
                 .disabled(document == nil)
         }
     }

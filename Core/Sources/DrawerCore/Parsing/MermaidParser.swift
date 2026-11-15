@@ -99,7 +99,7 @@ struct MermaidParser {
         return builder.finish(family: .flowchart, direction: direction, title: title, insertionOffset: insertion)
     }
 
-    private static let subgraphRegex = NSRegularExpression(#"^\s*subgraph\s+(?:([\w\-]+)\s*\[\s*"?([^"\]]*)"?\s*\]|"([^"]+)"|(.+?))\s*$"#)
+    private static let subgraphRegex = NSRegularExpression(#"^\s*subgraph\s+(?:([\w\-]+)\s*\[\s*(?:"([^"]*)"|([^"\]]*))\s*\]|"([^"]+)"|(.+?))\s*$"#)
 
     private func parseSubgraph(_ line: SourceLine, parent: String?, groups: inout [String]) {
         guard let m = Self.subgraphRegex.firstMatch(in: line.ns) else {
@@ -112,17 +112,19 @@ struct MermaidParser {
         var title: String?
         var titleSpan: SourceSpan?
         if let explicitID = m.string(1, in: line.ns) {
+            // A quoted title may contain brackets: subgraph api ["Backend [System]"].
+            let group = m.range(at: 2).location != NSNotFound ? 2 : 3
             id = explicitID
-            title = m.string(2, in: line.ns)
-            titleSpan = line.span(m.range(at: 2))
-        } else if let quoted = m.string(3, in: line.ns) {
+            title = m.string(group, in: line.ns)
+            titleSpan = line.span(m.range(at: group))
+        } else if let quoted = m.string(4, in: line.ns) {
             id = quoted
             title = quoted
-            titleSpan = line.span(m.range(at: 3))
-        } else {
-            id = m.string(4, in: line.ns) ?? "subgraph\(line.number)"
-            title = id
             titleSpan = line.span(m.range(at: 4))
+        } else {
+            id = m.string(5, in: line.ns) ?? "subgraph\(line.number)"
+            title = id
+            titleSpan = line.span(m.range(at: 5))
         }
         builder.declare(id, kind: .group, title: title, titleSpan: titleSpan, declaration: line.span, standalone: true, parent: parent)
         groups.append(id)

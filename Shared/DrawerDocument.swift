@@ -6,6 +6,7 @@ extension UTType {
     static let drawerDiagram = UTType(exportedAs: "com.romadinov.drawer.diagram")
     static let plantUMLSource = UTType(filenameExtension: "puml") ?? .plainText
     static let mermaidSource = UTType(filenameExtension: "mmd") ?? .plainText
+    static let excalidraw = UTType(importedAs: "com.excalidraw.excalidraw", conformingTo: .json)
 }
 
 enum SelectionOrigin { case canvas, editor }
@@ -18,10 +19,11 @@ struct DrawerSnapshot: Sendable {
 
 @Observable
 final class DrawerDocument: Document {
-    /// PNG and SVG files open when they carry an embedded diagram (exported by Drawer), and save back
-    /// into the same format, so a `diagram.png` in a README stays editable.
-    static let readableContentTypes: [UTType] = [.drawerDiagram, .png, .svg]
-    static let writableContentTypes: [UTType] = [.drawerDiagram, .png, .svg]
+    /// PNG and SVG files open when they carry an embedded diagram (exported by Drawer, or by Excalidraw with the scene
+    /// embedded), and save back into the same format, so a `diagram.png` in a README stays editable.
+    /// Excalidraw drawings open as diagrams and save back as Excalidraw drawings.
+    static let readableContentTypes: [UTType] = [.drawerDiagram, .excalidraw, .png, .svg]
+    static let writableContentTypes: [UTType] = [.drawerDiagram, .excalidraw, .png, .svg]
 
     private(set) var state: DrawingState
     private(set) var parsed: ParsedDiagram = .empty
@@ -55,10 +57,11 @@ final class DrawerDocument: Document {
         FileWrapperDocumentReader(configuration) { fileWrapper in
             guard let data = fileWrapper.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }
             if let state = EmbeddedDiagram.decode(data) { return DrawerSnapshot(state: state) }
+            if let scene = Excalidraw.scene(from: data) { return DrawerSnapshot(state: Excalidraw.state(from: scene, measure: appMeasurer)) }
             if data.starts(with: [0x89, 0x50, 0x4E, 0x47]) || String(data: data.prefix(512), encoding: .utf8)?.contains("<svg") == true {
                 throw CocoaError(.fileReadCorruptFile, userInfo: [
                     NSLocalizedDescriptionKey: "This image doesn’t contain a Drawer diagram.",
-                    NSLocalizedRecoverySuggestionErrorKey: "Only PNG and SVG files exported from Drawer can be opened and edited.",
+                    NSLocalizedRecoverySuggestionErrorKey: "PNG and SVG files exported from Drawer, or from Excalidraw with “Embed scene” on, can be opened and edited.",
                 ])
             }
             return DrawerSnapshot(state: try JSONDecoder().decode(DrawingState.self, from: data))
@@ -286,6 +289,15 @@ final class DrawerDocument: Document {
     func paste(_ diagram: DrawingState) {
         var pasted = Set<ElementRef>()
         change("Paste") { state, _ in pasted = DiagramClipboard.paste(diagram, into: &state, measure: appMeasurer) }
+        selection = pasted
+        selectionOrigin = .canvas
+    }
+
+    /// Pastes shapes copied in Excalidraw: they become elements of this diagram.
+    @MainActor
+    func paste(_ scene: Excalidraw.Scene) {
+        var pasted = Set<ElementRef>()
+        change("Paste from Excalidraw") { state, _ in pasted = Excalidraw.paste(scene, into: &state, measure: appMeasurer) }
         selection = pasted
         selectionOrigin = .canvas
     }

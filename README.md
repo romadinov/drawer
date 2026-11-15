@@ -70,6 +70,17 @@ later, change it, and it saves back to the same file.
 
 <sub>These three SVGs were exported by Drawer — open any of them in Drawer to keep editing.</sub>
 
+## Excalidraw in, Excalidraw out
+
+- **Open `.excalidraw` files**, and PNGs or SVGs exported from Excalidraw with *Embed scene*. Boxes, ellipses and
+  diamonds become elements, text inside them names them, arrows between them become relationships, frames and shapes
+  drawn around others become groups, colours are kept and freehand lines stay as ink.
+- **Paste from Excalidraw.** Copy shapes in Excalidraw and paste them into any diagram: they become elements *of that
+  diagram* — a sketch pasted into a C4 diagram turns into containers.
+- **Export or copy to Excalidraw.** *Export Excalidraw…* and *Copy for Excalidraw* draw the diagram in Excalidraw's
+  hand-drawn style, with labels bound to their shapes and arrows bound to their ends, so it keeps working when you
+  move things in Excalidraw. A `.excalidraw` file saved by Drawer also opens in Drawer exactly as it was.
+
 ## On the iPad
 
 <img align="right" src="docs/media/demo.gif" width="300" alt="Sketching a C4 diagram on iPad: boxes become a software system and a database, a line becomes a relationship, and the spec updates as you type">
@@ -123,6 +134,8 @@ The Mac app also works headless, which is handy for docs pipelines:
 ```bash
 Drawer.app/Contents/MacOS/Drawer --export diagram.drawer diagram.svg   # or .png / .pdf; PNG and SVG stay editable
 Drawer.app/Contents/MacOS/Drawer --export diagram.png  diagram.pdf     # inputs can be exported images too
+Drawer.app/Contents/MacOS/Drawer --export sketch.excalidraw diagram.drawer   # Excalidraw in…
+Drawer.app/Contents/MacOS/Drawer --export diagram.drawer diagram.excalidraw  # …and out
 Drawer.app/Contents/MacOS/Drawer --ink sketch.drawer recognised.drawer # recognise ink in a file
 ```
 
@@ -130,7 +143,7 @@ Drawer.app/Contents/MacOS/Drawer --ink sketch.drawer recognised.drawer # recogni
 
 | Folder | What's in it |
 |---|---|
-| `Core/` | **DrawerCore**, a Swift package with no UI: PlantUML and Mermaid parsers with source spans, the minimal-diff spec editor, layout and geometry, ink recognition, voice commands, completion, and embedding diagrams in PNG/SVG. |
+| `Core/` | **DrawerCore**, a Swift package with no UI: PlantUML and Mermaid parsers with source spans, the minimal-diff spec editor, layout and geometry, ink recognition, voice commands, completion, embedding diagrams in PNG/SVG, and Excalidraw import/export. |
 | `Shared/` | The renderer (Core Graphics, with an SVG back end), the document, handwriting reading (Vision) and speech — used by both apps. |
 | `App/` | The macOS app (AppKit canvas, spec editor, inspector). |
 | `Mobile/` | The iPad/iPhone app and its UI tests, including the script that records the demo above. |

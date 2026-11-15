@@ -4,7 +4,7 @@ import DrawerCore
 
 @MainActor
 enum Exporter {
-    enum Format { case png, svg, pdf }
+    enum Format { case png, svg, pdf, excalidraw }
 
     static func pngData(_ doc: DrawerDocument) -> Data? { DiagramExport.png(doc.state) }
     static func pdfData(_ doc: DrawerDocument) -> Data? { pdfData(doc.state) }
@@ -34,14 +34,21 @@ enum Exporter {
 
     static func exportImage(_ doc: DrawerDocument, format: Format) {
         let panel = NSSavePanel()
-        let type: UTType = switch format { case .png: .png; case .svg: .svg; case .pdf: .pdf }
+        let type: UTType = switch format { case .png: .png; case .svg: .svg; case .pdf: .pdf; case .excalidraw: .excalidraw }
         panel.allowedContentTypes = [type]
-        panel.nameFieldStringValue = (doc.parsed.title ?? "Diagram") + "." + (type.preferredFilenameExtension ?? "png")
-        if format != .pdf {
-            panel.message = "The image keeps the editable diagram inside — open it in Drawer to keep editing."
+        panel.nameFieldStringValue = (doc.parsed.title ?? "Diagram") + "." + (type.preferredFilenameExtension ?? Excalidraw.fileExtension)
+        switch format {
+        case .png, .svg: panel.message = "The image keeps the editable diagram inside — open it in Drawer to keep editing."
+        case .excalidraw: panel.message = "Opens in Excalidraw as shapes, labels and arrows — and in Drawer as this diagram."
+        case .pdf: break
         }
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        let data = switch format { case .png: DiagramExport.png(doc.state); case .svg: DiagramExport.svg(doc.state); case .pdf: pdfData(doc.state) }
+        let data = switch format {
+        case .png: DiagramExport.png(doc.state)
+        case .svg: DiagramExport.svg(doc.state)
+        case .pdf: pdfData(doc.state)
+        case .excalidraw: DiagramExport.fileContents(doc.state, as: .excalidraw)
+        }
         try? data?.write(to: url)
     }
 
@@ -61,6 +68,26 @@ enum Exporter {
 
     static func copyPNG(_ doc: DrawerDocument) { copy(doc, selection: []) }
 
+    /// Copies the selection (or the whole diagram) the way Excalidraw copies elements, so it pastes into Excalidraw as shapes.
+    static func copyForExcalidraw(_ doc: DrawerDocument) {
+        let part = DiagramClipboard.subset(doc.state, parsed: doc.parsed, selection: doc.selection)
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(Excalidraw.clipboard(part, measure: appMeasurer), forType: .string)
+    }
+
+    /// Shapes copied in Excalidraw (its clipboard is JSON text), or an Excalidraw file or image with the scene embedded.
+    static func pastedExcalidraw() -> Excalidraw.Scene? {
+        let pb = NSPasteboard.general
+        if let text = pb.string(forType: .string), text.contains("excalidraw"), let scene = Excalidraw.scene(from: Data(text.utf8)) { return scene }
+        for type in [NSPasteboard.PasteboardType.png, NSPasteboard.PasteboardType(UTType.svg.identifier), .fileURL] {
+            guard var data = pb.data(forType: type) else { continue }
+            if type == .fileURL, let url = URL(dataRepresentation: data, relativeTo: nil), let contents = try? Data(contentsOf: url) { data = contents }
+            if let scene = Excalidraw.scene(from: data) { return scene }
+        }
+        return nil
+    }
+
     /// A diagram on the pasteboard: copied from Drawer, or an image that has one embedded.
     static func pastedDiagram() -> DrawingState? {
         let pb = NSPasteboard.general
@@ -78,9 +105,14 @@ enum HeadlessExport {
     static func run(input: String, output: String) -> Never {
         do {
             let data = try Data(contentsOf: URL(fileURLWithPath: input))
-            guard let state = EmbeddedDiagram.decode(data) else { throw CocoaError(.fileReadCorruptFile) }
+            guard let state = EmbeddedDiagram.decode(data) ?? Excalidraw.scene(from: data).map({ Excalidraw.state(from: $0, measure: appMeasurer) })
+            else { throw CocoaError(.fileReadCorruptFile) }
             let doc = DrawerDocument(state: state)
-            let out = output.hasSuffix(".pdf") ? Exporter.pdfData(doc) : output.hasSuffix(".svg") ? DiagramExport.svg(state) : Exporter.pngData(doc)
+            let out = output.hasSuffix(".pdf") ? Exporter.pdfData(doc)
+                : output.hasSuffix(".svg") ? DiagramExport.svg(state)
+                : output.hasSuffix(".excalidraw") ? DiagramExport.fileContents(state, as: .excalidraw)
+                : output.hasSuffix(".drawer") ? EmbeddedDiagram.json(state)
+                : Exporter.pngData(doc)
             guard let out else { throw CocoaError(.fileWriteUnknown) }
             try out.write(to: URL(fileURLWithPath: output))
             for d in doc.parsed.diagnostics { FileHandle.standardError.write("line \(d.line): \(d.message)\n".data(using: .utf8)!) }

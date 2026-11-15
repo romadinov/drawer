@@ -224,8 +224,10 @@ struct ContentView: View {
                 Button("Export PNG (editable)…") { Exporter.exportImage(document, format: .png) }
                 Button("Export SVG (editable)…") { Exporter.exportImage(document, format: .svg) }
                 Button("Export PDF…") { Exporter.exportImage(document, format: .pdf) }
+                Button("Export Excalidraw…") { Exporter.exportImage(document, format: .excalidraw) }
                 Divider()
                 Button("Copy Diagram as Image") { Exporter.copyPNG(document) }
+                Button("Copy for Excalidraw") { Exporter.copyForExcalidraw(document) }
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
             }

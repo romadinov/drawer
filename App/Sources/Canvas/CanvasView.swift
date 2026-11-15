@@ -708,12 +708,19 @@ final class CanvasNSView: NSView, NSTextFieldDelegate, NSPopoverDelegate {
         doc.deleteSelection()
     }
 
-    /// ⌘V: a diagram copied from Drawer, or a PNG/SVG exported by Drawer, becomes editable elements.
+    /// ⌘V: a diagram copied from Drawer, a PNG/SVG exported by Drawer, or shapes copied in Excalidraw become editable elements.
     @objc func paste(_ sender: Any?) {
         guard let doc = document else { return }
-        guard let diagram = Exporter.pastedDiagram() else { NSSound.beep(); return }
-        doc.paste(diagram)
-        if doc.parsed.nodes.count == SpecParser.parse(diagram.spec, language: diagram.language).nodes.count { zoomToFit() }
+        let wasEmpty = doc.isEmpty
+        if let diagram = Exporter.pastedDiagram() {
+            doc.paste(diagram)
+        } else if let scene = Exporter.pastedExcalidraw() {
+            doc.paste(scene)
+        } else {
+            NSSound.beep()
+            return
+        }
+        if wasEmpty { zoomToFit() }
     }
 
     @objc func delete(_ sender: Any?) { document?.deleteSelection() }

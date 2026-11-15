@@ -6,6 +6,24 @@ import DrawerCore
 /// real mouse handlers (no real cursor involved), then writes what was recognised and what ink is still pending.
 @MainActor
 enum DebugReplay {
+    /// `Drawer --snapshot-windows DIR`: a few seconds after launch, saves each visible window as a PNG and lists their titles
+    /// (screen capture isn't always available to the tools that check the app).
+    static func snapshotWindows(to dir: String) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            let url = URL(fileURLWithPath: dir)
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            var titles: [String] = []
+            for (i, win) in NSApp.windows.filter(\.isVisible).enumerated() {
+                titles.append("\(i): \(win.title) \(Int(win.frame.width))×\(Int(win.frame.height)) \(type(of: win))")
+                guard let view = win.contentView?.superview ?? win.contentView,
+                      let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
+                view.cacheDisplay(in: view.bounds, to: rep)
+                try? rep.representation(using: .png, properties: [:])?.write(to: url.appendingPathComponent("window-\(i).png"))
+            }
+            try? titles.joined(separator: "\n").write(to: url.appendingPathComponent("windows.txt"), atomically: true, encoding: .utf8)
+        }
+    }
+
     static func start(output: String) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { run(output: output) }
     }

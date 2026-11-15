@@ -196,6 +196,7 @@ struct MobileContentView: View {
                 }
                 Divider()
                 Button { MobileExporter.copy(document) } label: { Label("Copy as Image", systemImage: "doc.on.doc") }
+                Button { MobileExporter.copyForExcalidraw(document) } label: { Label("Copy for Excalidraw", systemImage: "scribble") }
                 Button { paste() } label: { Label("Paste Diagram", systemImage: "doc.on.clipboard") }
                 Button {
                     document.selection = Set(document.parsed.nodes.map { .node($0.id) } + document.parsed.edges.map { .edge($0.id) }
@@ -204,6 +205,7 @@ struct MobileContentView: View {
                 Divider()
                 Button { share(.png) } label: { Label("Share PNG (editable)", systemImage: "photo") }
                 Button { share(.svg) } label: { Label("Share SVG (editable)", systemImage: "square.and.arrow.up") }
+                Button { share(.excalidraw) } label: { Label("Share as Excalidraw", systemImage: "scribble.variable") }
             } label: {
                 Label("More", systemImage: "ellipsis.circle")
             }
@@ -215,8 +217,13 @@ struct MobileContentView: View {
     }
 
     private func paste() {
-        guard let diagram = MobileExporter.pastedDiagram() else { return }
-        document.paste(diagram)
+        if let diagram = MobileExporter.pastedDiagram() {
+            document.paste(diagram)
+        } else if let scene = MobileExporter.pastedExcalidraw() {
+            document.paste(scene)
+        } else {
+            return
+        }
         fitSoon()
     }
 
@@ -424,7 +431,7 @@ enum MobileExporter {
     static func fileURL(_ doc: DrawerDocument, type: UTType) -> URL? {
         guard let data = DiagramExport.fileContents(doc.state, as: type) else { return nil }
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent((doc.parsed.title ?? "Diagram") + "." + (type.preferredFilenameExtension ?? "png"))
+            .appendingPathComponent((doc.parsed.title ?? "Diagram") + "." + (type.preferredFilenameExtension ?? Excalidraw.fileExtension))
         return (try? data.write(to: url)) != nil ? url : nil
     }
 
@@ -441,6 +448,22 @@ enum MobileExporter {
         let pb = UIPasteboard.general
         for type in [UTType.drawerDiagram, .png, .svg] {
             if let data = pb.data(forPasteboardType: type.identifier), let state = EmbeddedDiagram.decode(data) { return state }
+        }
+        return nil
+    }
+
+    /// The selection (or whole diagram) the way Excalidraw copies elements, so it pastes into Excalidraw as shapes.
+    static func copyForExcalidraw(_ doc: DrawerDocument) {
+        let part = DiagramClipboard.subset(doc.state, parsed: doc.parsed, selection: doc.selection)
+        UIPasteboard.general.string = Excalidraw.clipboard(part, measure: appMeasurer)
+    }
+
+    /// Shapes copied in Excalidraw (its clipboard is JSON text), or an image with the scene embedded.
+    static func pastedExcalidraw() -> Excalidraw.Scene? {
+        let pb = UIPasteboard.general
+        if pb.hasStrings, let text = pb.string, text.contains("excalidraw"), let scene = Excalidraw.scene(from: Data(text.utf8)) { return scene }
+        for type in [UTType.png, .svg] {
+            if let data = pb.data(forPasteboardType: type.identifier), let scene = Excalidraw.scene(from: data) { return scene }
         }
         return nil
     }

@@ -66,8 +66,9 @@ enum DiagramExport {
         return Data(text.utf8)
     }
 
-    /// The file contents for saving a document as `type` (PNG/SVG with the diagram embedded, otherwise JSON).
+    /// The file contents for saving a document as `type` (PNG/SVG with the diagram embedded, an Excalidraw drawing, otherwise JSON).
     static func fileContents(_ state: DrawingState, as type: UTType) -> Data? {
+        if type.conforms(to: .excalidraw) { return Excalidraw.file(state, measure: appMeasurer) }
         if type.conforms(to: .png) { return png(state) }
         if type.conforms(to: .svg) { return svg(state) }
         return nil
