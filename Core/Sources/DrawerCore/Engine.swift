@@ -25,7 +25,7 @@ public enum Engine {
                                measure: @escaping TextMeasurer = approximateMeasurer) -> String {
         var editor = SpecEditor(spec: state.spec, language: state.language)
         let id = editor.addNode(kind: kind, title: title, parent: parent)
-        state.spec = editor.spec
+        adopt(editor, into: &state)
         if let node = editor.parsed.node(id) {
             let size = DiagramGeometry.intrinsicSize(node, measure: measure)
             state.layout[id] = NodeLayout(position: Point(x: (point.x - size.width / 2).rounded(), y: (point.y - size.height / 2).rounded()),
@@ -39,7 +39,7 @@ public enum Engine {
                                measure: @escaping TextMeasurer = approximateMeasurer) {
         var editor = SpecEditor(spec: state.spec, language: state.language)
         editor.addEdge(from: from, to: to, label: label, before: before)
-        state.spec = editor.spec
+        adopt(editor, into: &state)
         reconcile(&state, measure: measure)
     }
 
@@ -55,7 +55,7 @@ public enum Engine {
         if !nodes.isEmpty || !edges.isEmpty {
             var editor = SpecEditor(spec: state.spec, language: state.language)
             editor.delete(nodes: nodes, edges: edges)
-            state.spec = editor.spec
+            adopt(editor, into: &state)
             for id in edges { state.edgeLayout[id] = nil }
         }
         state.decorations.removeAll { decorations.contains($0.id) }
@@ -79,8 +79,8 @@ public enum Engine {
             let candidate = editor.uniqueID(for: title)
             if candidate != id, editor.renameReferences(id, to: candidate) { newID = candidate }
         }
-        state.spec = editor.spec
-        if newID != id { migrateID(&state, from: id, to: newID) }
+        adopt(editor, into: &state)
+        if newID != id, editor.renames[id] == nil { migrateID(&state, from: id, to: newID) }
         // A user-sized node that changed content keeps its size; intrinsic ones re-measure automatically.
         reconcile(&state, measure: measure)
         return newID
@@ -90,7 +90,7 @@ public enum Engine {
         var editor = SpecEditor(spec: state.spec, language: state.language)
         let before = editor.parsed.edge(id)
         editor.update(edge: id, edit)
-        state.spec = editor.spec
+        adopt(editor, into: &state)
         if edit.reverse, let before {
             let newID = "\(before.to)->\(before.from)"
             if let l = state.edgeLayout.removeValue(forKey: id) {
@@ -99,6 +99,30 @@ public enum Engine {
             if let s = state.styles.removeValue(forKey: "edge:" + id) { state.styles["edge:" + newID] = s }
         }
         reconcile(&state, measure: measure)
+    }
+
+    /// Takes an editor's text, moving layout and styles of elements whose id changed with it.
+    public static func adopt(_ editor: SpecEditor, into state: inout DrawingState) {
+        state.spec = editor.spec
+        migrateIDs(&state, editor.renames)
+    }
+
+    /// Renames several ids at once (they may swap), via temporary names.
+    static func migrateIDs(_ state: inout DrawingState, _ renames: [String: String]) {
+        let changes = renames.filter { $0.key != $0.value }
+        guard !changes.isEmpty else { return }
+        for (old, new) in changes { migrateID(&state, from: old, to: "\u{1}" + new) }
+        for new in changes.values { migrateID(&state, from: "\u{1}" + new, to: new) }
+    }
+
+    /// Text typed in the spec: an activity's id follows its text, so its position follows the edit.
+    public static func followTextEdit(_ state: inout DrawingState, from old: ParsedDiagram) {
+        guard state.language == .plantUML, old.family == .activity else { return }
+        let new = SpecParser.parse(state.spec, language: state.language)
+        guard new.family == .activity, new.nodes.count == old.nodes.count else { return }
+        var map: [String: String] = [:]
+        for (a, b) in zip(old.nodes, new.nodes) where a.kind == b.kind && a.id != b.id && state.layout[b.id] == nil { map[a.id] = b.id }
+        migrateIDs(&state, map)
     }
 
     static func isPlaceholderID(_ id: String, title: String, kind: NodeKind) -> Bool {
@@ -175,6 +199,13 @@ public enum Engine {
         guard language != state.language else { return }
         state.spec = SpecGenerator.generate(parsed, language: language)
         state.language = language
+        if parsed.family == .activity && language == .plantUML {
+            // PlantUML activities have no ids: they come from the text.
+            let order = ActivityWriter(nodes: parsed.nodes, edges: parsed.edges).write().order
+            let map = SpecEditor.matchActivityIDs(order: order + parsed.nodes.map(\.id).filter { !order.contains($0) }, old: parsed.nodes,
+                                                  new: SpecParser.parse(state.spec, language: language))
+            migrateIDs(&state, map)
+        }
     }
 }
 
@@ -182,6 +213,14 @@ public enum Engine {
 public enum SpecGenerator {
     public static func generate(_ parsed: ParsedDiagram, language: SpecLanguage) -> String {
         if parsed.family == .sequence { return generateSequence(parsed, language: language) }
+        if parsed.family == .activity && language == .plantUML {
+            var lines = ["@startuml"]
+            if let t = parsed.title { lines.append("title \(t)") }
+            let body = ActivityWriter(nodes: parsed.nodes, edges: parsed.edges).write().text
+            if !body.isEmpty { lines.append(body) }
+            lines.append("@enduml")
+            return lines.joined(separator: "\n") + "\n"
+        }
         let emitter = SpecEmitter(language: language, family: parsed.family)
         var lines: [String] = []
         switch language {
@@ -192,7 +231,7 @@ public enum SpecGenerator {
             if parsed.direction.isHorizontal { lines.append("left to right direction") }
         case .mermaid:
             switch parsed.family {
-            case .flowchart: lines.append("flowchart " + (parsed.direction.isHorizontal ? "LR" : "TD"))
+            case .flowchart, .activity: lines.append("flowchart " + (parsed.direction.isHorizontal ? "LR" : "TD"))
             case .classDiagram: lines.append("classDiagram")
             case .erDiagram: lines.append("erDiagram")
             case .c4: lines.append("C4Container")

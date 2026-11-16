@@ -179,6 +179,7 @@ public enum DiagramFamily: String, Sendable, CaseIterable {
     case erDiagram
     case c4
     case sequence
+    case activity
 
     public var displayName: String {
         switch self {
@@ -187,6 +188,7 @@ public enum DiagramFamily: String, Sendable, CaseIterable {
         case .erDiagram: "Entity-Relationship"
         case .c4: "C4"
         case .sequence: "Sequence"
+        case .activity: "Activity"
         }
     }
 }
@@ -207,10 +209,14 @@ public enum NodeKind: String, Codable, Sendable, CaseIterable {
     case person, personExt, system, systemExt, systemDb, systemDbExt, systemQueue, container, containerExt, containerDb, containerDbExt, containerQueue, component4, component4Ext, component4Db, component4Queue
     // sequence participants
     case participant, seqBoundary, seqControl, seqEntity, collections
+    // activity
+    case action, activityStart, activityStop, activityEnd, forkBar
     // groups
-    case group, boundary
+    case group, boundary, lane
 
-    public var isGroup: Bool { self == .group || self == .boundary }
+    public var isGroup: Bool { self == .group || self == .boundary || self == .lane }
+    /// Start, stop, flow end and fork/join bars: drawn as symbols, without their title.
+    public var isActivitySymbol: Bool { [.activityStart, .activityStop, .activityEnd, .forkBar].contains(self) }
     public var isClassifier: Bool { [.classType, .interfaceType, .abstractClass, .enumType].contains(self) }
     public var isC4: Bool {
         switch self {
@@ -269,8 +275,14 @@ public enum NodeKind: String, Codable, Sendable, CaseIterable {
         case .seqControl: "Control"
         case .seqEntity: "Entity"
         case .collections: "Collections"
+        case .action: "Action"
+        case .activityStart: "Start"
+        case .activityStop: "Stop"
+        case .activityEnd: "Flow End"
+        case .forkBar: "Fork"
         case .group: "Group"
         case .boundary: "Boundary"
+        case .lane: "Swimlane"
         }
     }
 
@@ -293,7 +305,7 @@ public enum NodeKind: String, Codable, Sendable, CaseIterable {
         if kind.isGroup || kind == .entity { return [kind] }
         if kind.isClassifier { return [.classType, .abstractClass, .interfaceType, .enumType] }
         if kind.isC4 { return allCases.filter(\.isC4) }
-        let palette = family == .sequence ? Self.palette(for: .sequence, language: language) : Self.palette(for: .flowchart, language: language)
+        let palette = Self.palette(for: family == .sequence || family == .activity ? family : .flowchart, language: language)
         return palette.contains(kind) ? palette : palette + [kind]
     }
 
@@ -313,6 +325,7 @@ public enum NodeKind: String, Codable, Sendable, CaseIterable {
             case .mermaid: return [.participant, .actor]
             case .plantUML: return [.participant, .actor, .database, .queue, .collections, .seqBoundary, .seqControl, .seqEntity]
             }
+        case .activity: return [.action, .diamond, .forkBar, .activityStart, .activityStop, .activityEnd]
         }
     }
 }

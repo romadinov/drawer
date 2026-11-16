@@ -6,7 +6,7 @@
 
 **Sketch your architecture. Get real PlantUML and Mermaid.**
 
-C4, UML class, ER, sequence and flow diagrams for the Mac and iPad, where the spec and the drawing are the same thing —
+C4, UML class, ER, sequence, activity and flow diagrams for the Mac and iPad, where the spec and the drawing are the same thing —
 edit either one and the other follows.
 
 [![Download](https://img.shields.io/github/v/release/romadinov/drawer?label=download&color=2D5BFF)](https://github.com/romadinov/drawer/releases/latest)
@@ -34,7 +34,8 @@ edits the spec for you — surgically, keeping your formatting and comments.
 Draw with Apple Pencil, a finger, a mouse or a trackpad.
 
 - **Shapes become elements.** Boxes, circles, diamonds and stick figures turn into the right element for the diagram:
-  containers and people in C4, classes in UML, entities in ER, participants in sequence diagrams.
+  containers and people in C4, classes in UML, entities in ER, participants in sequence diagrams; in activity
+  diagrams a small circle is the start, a circle in a circle the end, a long thin box a fork bar.
 - **It asks when it isn't sure.** A box could be a container, a system or a database — Drawer asks right next to the
   shape, then goes straight to naming it.
 - **Handwriting becomes titles and labels.** Write inside a shape to name it, beside an arrow to label it.
@@ -104,6 +105,10 @@ The companion app opens the same `.drawer` files from Files and iCloud Drive.
   colours and free-form annotations that live only in the drawing.
 - **Sequence diagrams** with activations, `alt`/`loop`/`opt`/`par` fragments, notes, dividers and autonumbering;
   drag a lifeline sideways or a message up and down.
+- **Activity diagrams** in PlantUML's `start` / `:action;` syntax with `if`/`switch`, `while`/`repeat`, `fork`/`split`,
+  swimlanes, partitions and notes. Drawing and connecting steps rewrites the flow as structured PlantUML (a jump the
+  syntax can't express goes through `(1)` connector circles); in Mermaid, activity diagrams are flowcharts with the
+  start, stop and fork shapes.
 
 ## Install
 

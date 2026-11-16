@@ -239,7 +239,8 @@ extension Pen {
                 InkCommit.apply([.shape(.rectangle, Rect(x: 0, y: 0, width: 160, height: 80))], to: &state)
                 let after = SpecParser.parse(state.spec, language: language)
                 #expect(after.family == family, "\(language) \(family): \(state.spec)")
-                #expect(after.nodes.count == 1 && after.diagnostics.isEmpty, "\(language) \(family): \(state.spec) \(after.diagnostics)")
+                // A blank activity diagram already has its start.
+                #expect(after.nodes.count == (family == .activity ? 2 : 1) && after.diagnostics.isEmpty, "\(language) \(family): \(state.spec) \(after.diagnostics)")
             }
         }
     }

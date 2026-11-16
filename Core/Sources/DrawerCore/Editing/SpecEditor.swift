@@ -49,6 +49,9 @@ public struct SpecEditor {
     public let language: SpecLanguage
     public private(set) var spec: String
     public private(set) var parsed: ParsedDiagram
+    /// Elements whose id changed (old → new). PlantUML activities have no identifiers, so ids follow their text
+    /// and their order; the layout has to follow too.
+    public private(set) var renames: [String: String] = [:]
 
     public init(spec: String, language: SpecLanguage) {
         self.language = language
@@ -120,13 +123,7 @@ public struct SpecEditor {
     // MARK: Identifiers
 
     public func uniqueID(for title: String) -> String {
-        var base = title.components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-            .enumerated()
-            .map { $0.offset == 0 ? $0.element : $0.element.prefix(1).uppercased() + $0.element.dropFirst() }
-            .joined()
-        if base.isEmpty { base = "node" }
-        if let f = base.first, f.isNumber { base = "n" + base }
+        var base = SpecEmitter.baseID(title)
         if parsed.family == .erDiagram && language == .mermaid { base = base.uppercased() }
         var id = base
         var n = 2
@@ -134,11 +131,55 @@ public struct SpecEditor {
         return id
     }
 
+    // MARK: Activity diagrams
+
+    /// PlantUML activity diagrams are a flow of statements, not declarations and relationships, so structural
+    /// changes rewrite the flow from the changed graph.
+    private var rewritesActivity: Bool { language == .plantUML && parsed.family == .activity }
+
+    @discardableResult
+    private mutating func rewriteActivity(nodes: [DiagramNode], edges: [DiagramEdge]) -> [String: String] {
+        let (text, order) = ActivityWriter(nodes: nodes, edges: edges).write()
+        apply([Replacement(range: ActivityParser.bodyRange(of: spec), text: text.isEmpty ? "" : text + "\n")])
+        let map = Self.matchActivityIDs(order: order + nodes.map(\.id).filter { !order.contains($0) }, old: nodes, new: parsed)
+        record(map)
+        return map
+    }
+
+    /// Pairs elements with the ones read back from rewritten text: same kind and text, in the order written.
+    static func matchActivityIDs(order: [String], old: [DiagramNode], new: ParsedDiagram) -> [String: String] {
+        func key(_ n: DiagramNode) -> String {
+            n.kind.rawValue + "|" + (n.kind == .forkBar || n.kind.isActivitySymbol ? "" : n.title.lowercased().filter { $0.isLetter || $0.isNumber })
+        }
+        var queues: [String: [String]] = [:]
+        for n in new.nodes { queues[key(n), default: []].append(n.id) }
+        let byID = Dictionary(old.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        var map: [String: String] = [:]
+        for id in order {
+            guard let n = byID[id], let next = queues[key(n)]?.first else { continue }
+            queues[key(n)]?.removeFirst()
+            map[id] = next
+        }
+        return map
+    }
+
+    private mutating func record(_ map: [String: String]) {
+        for (old, new) in map where old != new && !old.hasPrefix("__") {
+            if let first = renames.first(where: { $0.value == old })?.key { renames[first] = new } else { renames[old] = new }
+        }
+    }
+
     // MARK: Operations
 
     /// Adds a node; returns its id.
     @discardableResult
     public mutating func addNode(kind: NodeKind, title: String, parent: String? = nil) -> String {
+        if rewritesActivity {
+            var node = DiagramNode(id: "__new", kind: kind, title: title)
+            node.titleIsIdentifier = false
+            node.parent = parent
+            return rewriteActivity(nodes: parsed.nodes + [node], edges: parsed.edges)["__new"] ?? uniqueID(for: title)
+        }
         let id = uniqueID(for: title)
         var node = DiagramNode(id: id, kind: kind, title: title)
         node.titleIsIdentifier = title == id
@@ -160,6 +201,11 @@ public struct SpecEditor {
     /// Moves elements into a group block: their declarations are cut and pasted inside it
     /// (or a declaration is added there for elements that were only mentioned in relationships).
     public mutating func move(nodes ids: [String], into parent: String) {
+        if rewritesActivity {
+            let moving = Set(ids).subtracting([parent])
+            rewriteActivity(nodes: parsed.nodes.map { n in var n = n; if moving.contains(n.id) { n.parent = parent }; return n }, edges: parsed.edges)
+            return
+        }
         for id in ids where id != parent {
             guard let node = parsed.node(id), node.parent != parent, parsed.node(parent) != nil else { continue }
             var block: String
@@ -188,6 +234,12 @@ public struct SpecEditor {
 
     /// - Parameter before: id of an existing edge whose line the new one is inserted above (sequence diagrams).
     public mutating func addEdge(_ edge: DiagramEdge, before: String? = nil) {
+        if rewritesActivity {
+            var edge = edge
+            edge.id = "__edge"
+            rewriteActivity(nodes: parsed.nodes, edges: parsed.edges + [edge])
+            return
+        }
         let line = emitter.edge(edge, fromKind: parsed.node(edge.from)?.kind, toKind: parsed.node(edge.to)?.kind)
         if let before, let span = parsed.edge(before)?.span {
             let location = lineRange(span).location
@@ -220,6 +272,22 @@ public struct SpecEditor {
         var doomedNodes = nodeIDs
         for id in nodeIDs { doomedNodes.formUnion(before.descendants(of: id).map(\.id)) }
         let doomedEdges = Set(before.edges.filter { edgeIDs.contains($0.id) || doomedNodes.contains($0.from) || doomedNodes.contains($0.to) }.map(\.id))
+        if rewritesActivity {
+            var edges = before.edges.filter { !doomedEdges.contains($0.id) }
+            // Taking a step out of a flow joins the steps around it.
+            for id in doomedNodes {
+                let ins = before.edges.filter { $0.to == id && $0.from != id && !edgeIDs.contains($0.id) }
+                let outs = before.edges.filter { $0.from == id && $0.to != id && !edgeIDs.contains($0.id) }
+                guard ins.count == 1, outs.count == 1, !doomedNodes.contains(ins[0].from), !doomedNodes.contains(outs[0].to),
+                      before.node(id)?.kind != .note else { continue }
+                var joined = ins[0]
+                joined.to = outs[0].to
+                joined.id = "__heal\(id)"
+                edges.append(joined)
+            }
+            rewriteActivity(nodes: before.nodes.filter { !doomedNodes.contains($0.id) }, edges: edges)
+            return
+        }
 
         var ranges: [NSRange] = []
         for node in before.nodes where doomedNodes.contains(node.id) {
@@ -277,6 +345,7 @@ public struct SpecEditor {
         let onlyTitle = edit.kind == nil && edit.stereotype == nil && edit.technology == nil
             && edit.description == nil && edit.fields == nil && edit.methods == nil
         var currentID = id
+        if rewritesActivity { return updateActivity(node, edit, onlyTitle: onlyTitle) }
 
         if let title = edit.title, title != node.title {
             let identifierNamed = node.titleIsIdentifier && !node.kind.isC4 && node.kind != .boundary
@@ -322,12 +391,36 @@ public struct SpecEditor {
         return currentID
     }
 
+    private mutating func updateActivity(_ node: DiagramNode, _ edit: NodeEdit, onlyTitle: Bool) -> String {
+        if onlyTitle, let title = edit.title, let span = node.titleSpan, node.kind != .lane {
+            let before = parsed
+            var text = title.replacingOccurrences(of: "\n", with: "\\n")
+            if node.kind == .action { text = text.replacingOccurrences(of: ";", with: ",") }
+            if node.kind == .diamond { text = text.replacingOccurrences(of: ")", with: "]") }
+            apply([Replacement(range: span.nsRange, text: text)])
+            // Same elements in the same order; only ids that follow the text change.
+            var map: [String: String] = [:]
+            if before.nodes.count == parsed.nodes.count {
+                for (a, b) in zip(before.nodes, parsed.nodes) where a.kind == b.kind { map[a.id] = b.id }
+            }
+            record(map)
+            return map[node.id] ?? node.id
+        }
+        var changed = node
+        if let t = edit.title { changed.title = t }
+        if let k = edit.kind { changed.kind = k }
+        if let t = edit.technology { changed.technology = t }
+        let nodes = parsed.nodes.map { $0.id == node.id ? changed : $0 }
+        return rewriteActivity(nodes: nodes, edges: parsed.edges)[node.id] ?? node.id
+    }
+
     public mutating func update(edge id: String, _ edit: EdgeEdit) {
         guard var edge = parsed.edge(id) else { return }
         let labelOnly = edit.technology == nil && edit.fromLabel == nil && edit.toLabel == nil && edit.line == nil
             && edit.startMarker == nil && edit.endMarker == nil && !edit.reverse
         if labelOnly, let newLabel = edit.label, let new = newLabel, !new.isEmpty, let span = edge.labelSpan {
-            apply([Replacement(range: span.nsRange, text: emitter.inlineTitle(new))])
+            apply([Replacement(range: span.nsRange, text: rewritesActivity ? new.replacingOccurrences(of: ")", with: "]").replacingOccurrences(of: ";", with: ",")
+                                                                                       : emitter.inlineTitle(new))])
             return
         }
         if let l = edit.label { edge.label = l }
@@ -341,6 +434,10 @@ public struct SpecEditor {
             swap(&edge.from, &edge.to)
             swap(&edge.fromLabel, &edge.toLabel)
             swap(&edge.startMarker, &edge.endMarker)
+        }
+        if rewritesActivity {
+            rewriteActivity(nodes: parsed.nodes, edges: parsed.edges.map { $0.id == id ? edge : $0 })
+            return
         }
         if let span = edge.span, edge.spanIsStandalone {
             let indent = indentation(at: span)
@@ -358,7 +455,7 @@ public struct SpecEditor {
     /// Returns false if the spec doesn't record those places (then nothing is changed).
     @discardableResult
     public mutating func renameReferences(_ old: String, to new: String) -> Bool {
-        guard let node = parsed.node(old) else { return false }
+        guard !rewritesActivity, let node = parsed.node(old) else { return false }
         let ns = spec as NSString
         let macros: Set<String> = ["Person", "Person_Ext", "System", "System_Ext", "SystemDb", "SystemDb_Ext", "SystemQueue", "Container",
                                    "Container_Ext", "ContainerDb", "ContainerDb_Ext", "ContainerQueue", "Component", "Component_Ext",

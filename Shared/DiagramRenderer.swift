@@ -105,6 +105,16 @@ struct DiagramRenderer {
         let lw = strokeWidth(node.id, default: node.kind.isC4 ? 1 : 1.2)
         let dashed = state.styles[node.id]?.dashed == true
 
+        if node.kind.isActivitySymbol {
+            drawActivitySymbol(node.kind, r, p, lw: lw)
+            if selected || highlighted == node.id {
+                let sel = NSBezierPath(roundedRect: r.insetBy(dx: -4, dy: -4), xRadius: 6, yRadius: 6)
+                NodePalette.selection.withAlphaComponent(selected ? 0.9 : 0.5).useForStroke()
+                sel.lineWidth = selected ? 2 : 1.5
+                sel.paintStroke()
+            }
+            return
+        }
         let path = Self.outline(for: node.kind, in: r)
         if node.kind == .collections {
             let back = NSBezierPath(roundedRect: r.offsetBy(dx: 5, dy: -5), xRadius: 3, yRadius: 3)
@@ -145,8 +155,39 @@ struct DiagramRenderer {
         }
     }
 
+    /// Start (filled dot), stop (bullseye), flow end (circle with a cross) and fork/join bars, in the stroke colour.
+    private func drawActivitySymbol(_ kind: NodeKind, _ r: CGRect, _ p: NodePalette, lw: CGFloat) {
+        let ink = p.stroke
+        switch kind {
+        case .activityStart:
+            ink.useForFill()
+            NSBezierPath(ovalIn: r).paintFill()
+        case .activityStop:
+            let outer = NSBezierPath(ovalIn: r.insetBy(dx: 1, dy: 1))
+            NodePalette.canvas.useForFill(); outer.paintFill()
+            ink.useForStroke(); outer.lineWidth = max(lw, 1.5); outer.paintStroke()
+            ink.useForFill()
+            NSBezierPath(ovalIn: r.insetBy(dx: r.width * 0.22, dy: r.height * 0.22)).paintFill()
+        case .activityEnd:
+            let circle = NSBezierPath(ovalIn: r.insetBy(dx: 1, dy: 1))
+            NodePalette.canvas.useForFill(); circle.paintFill()
+            ink.useForStroke(); circle.lineWidth = max(lw, 1.5); circle.paintStroke()
+            let d = r.width * 0.5 / sqrt(2)
+            let x = NSBezierPath()
+            x.move(to: CGPoint(x: r.midX - d, y: r.midY - d)); x.line(to: CGPoint(x: r.midX + d, y: r.midY + d))
+            x.move(to: CGPoint(x: r.midX + d, y: r.midY - d)); x.line(to: CGPoint(x: r.midX - d, y: r.midY + d))
+            x.lineWidth = max(lw, 1.5); x.paintStroke()
+        default:
+            ink.useForFill()
+            NSBezierPath(roundedRect: r, xRadius: min(r.height, r.width) / 2, yRadius: min(r.height, r.width) / 2).paintFill()
+        }
+    }
+
     static func outline(for kind: NodeKind, in r: CGRect) -> NSBezierPath {
         switch kind {
+        case .action:
+            let radius = min(14, r.height / 2.4)
+            return NSBezierPath(roundedRect: r, xRadius: radius, yRadius: radius)
         case .rounded, .container, .containerExt, .component4, .component4Ext, .system, .systemExt, .person, .personExt:
             return NSBezierPath(roundedRect: r, xRadius: kind == .person || kind == .personExt ? 18 : 10, yRadius: kind == .person || kind == .personExt ? 18 : 10)
         case .stadium:
@@ -466,7 +507,7 @@ struct DiagramRenderer {
         p.fill.useForFill()
         path.paintFill()
         path.lineWidth = strokeWidth(node.id, default: 1.2)
-        path.setLineDash([7, 4], count: 2, phase: 0)
+        if node.kind != .lane { path.setLineDash([7, 4], count: 2, phase: 0) }
         p.stroke.useForStroke()
         path.paintStroke()
         let selected = selection.contains(.node(node.id))

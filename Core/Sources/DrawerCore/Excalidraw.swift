@@ -467,6 +467,7 @@ public enum Excalidraw {
         }
 
         mutating func node(_ node: DiagramNode, frame: Rect, style: ElementStyle) -> String {
+            if node.kind.isActivitySymbol { return symbol(node.kind, frame: frame, style: style) }
             let colors = Excalidraw.palette(node.kind)
             var lines = [DiagramGeometry.stereotypeText(node), node.title].compactMap { $0 }
             if node.kind.isC4 { lines.append(DiagramGeometry.c4CaptionText(node)) }
@@ -490,6 +491,28 @@ public enum Excalidraw {
                            strokeWidth: style.lineWidth ?? 2, dashed: style.dashed ?? false, rounded: rounded)
             label(text, in: id, center: f.center, maxWidth: width, fontSize: fontSize, color: style.text ?? colors.text)
             return id
+        }
+
+        /// Activity start (dot), stop (bullseye), flow end (crossed circle) and fork/join bars.
+        mutating func symbol(_ kind: NodeKind, frame f: Rect, style: ElementStyle) -> String {
+            let ink = style.stroke ?? "#1e1e1e"
+            switch kind {
+            case .activityStart:
+                return shape("ellipse", f, stroke: ink, fill: ink)
+            case .activityStop:
+                let id = shape("ellipse", f, stroke: ink, fill: "#ffffff")
+                _ = shape("ellipse", f.insetBy(f.size.width * 0.22), stroke: ink, fill: ink)
+                return id
+            case .activityEnd:
+                let id = shape("ellipse", f, stroke: ink, fill: "#ffffff")
+                let d = f.size.width * 0.5 / 2.0.squareRoot()
+                let c = f.center
+                line([Point(x: c.x - d, y: c.y - d), Point(x: c.x + d, y: c.y + d)], arrow: false, stroke: ink)
+                line([Point(x: c.x + d, y: c.y - d), Point(x: c.x - d, y: c.y + d)], arrow: false, stroke: ink)
+                return id
+            default:
+                return shape("rectangle", f, stroke: ink, fill: ink, rounded: true)
+            }
         }
 
         mutating func arrow(_ path: [Point], edge: DiagramEdge, style: ElementStyle, curved: Bool,

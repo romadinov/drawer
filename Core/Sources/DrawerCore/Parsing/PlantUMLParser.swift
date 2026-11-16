@@ -1,8 +1,8 @@
 import Foundation
 
 /// Parses the structural PlantUML diagrams: class, object, component, deployment,
-/// use case, IE/ER (`entity`) and C4-PlantUML macros. Sequence/activity/state
-/// syntax is reported as unsupported.
+/// use case, IE/ER (`entity`) and C4-PlantUML macros. Sequence and activity diagrams have their own parsers;
+/// state syntax is reported as unsupported.
 struct PlantUMLParser {
     let source: String
     let lines: [SourceLine]
@@ -51,6 +51,11 @@ struct PlantUMLParser {
             let end = lines.first { $0.trimmed.hasPrefix("@enduml") }
             var parser = SequenceParser(dialect: .plantUML, lines: end.map { e in lines.filter { $0.number < e.number } } ?? lines)
             return parser.parse(insertionOffset: end?.offset ?? (source as NSString).length)
+        }
+        if ActivityParser.looksLikeActivity(lines) {
+            let end = lines.first { $0.trimmed.hasPrefix("@enduml") }
+            var parser = ActivityParser(lines: end.map { e in lines.filter { $0.number < e.number } } ?? lines)
+            return parser.parse(insertionOffset: end?.offset ?? (source as NSString).length, title: nil)
         }
         let relations = RelationParser()
         var direction = Direction.topDown

@@ -125,7 +125,7 @@ public enum VoiceCommand: Equatable, Sendable {
                 let kind = kind ?? InkCommit.choices(for: .rectangle, rect: Rect(x: 0, y: 0, width: 100, height: 60), family: parsed.family, language: state.language).first ?? .box
                 var editor = SpecEditor(spec: state.spec, language: state.language)
                 let id = editor.addNode(kind: kind, title: name.capitalizedTitle)
-                state.spec = editor.spec
+                Engine.adopt(editor, into: &state)
                 out.messages.append("Added \(kind.displayName) “\(name.capitalizedTitle)”")
                 out.touched.append(.node(id))
                 return id
@@ -147,7 +147,7 @@ public enum VoiceCommand: Equatable, Sendable {
                 var editor = SpecEditor(spec: state.spec, language: state.language)
                 let before = Set(editor.parsed.edges.map(\.id))
                 editor.addEdge(from: from, to: to, label: label)
-                state.spec = editor.spec
+                Engine.adopt(editor, into: &state)
                 if let e = editor.parsed.edges.first(where: { !before.contains($0.id) }) { out.touched.append(.edge(e.id)) }
                 out.messages.append("Connected \(editor.parsed.node(from)?.title ?? from) → \(editor.parsed.node(to)?.title ?? to)" + (label.map { ": \($0)" } ?? ""))
             case let .rename(a, b):

@@ -179,8 +179,8 @@ struct ContentView: View {
                         Button(kind.displayName) { tool = .node(kind) }
                     }
                 }
-                if lang == .plantUML && family != .sequence {
-                    ForEach(DiagramFamily.allCases.filter { $0 != family && $0 != .sequence }, id: \.self) { other in
+                if lang == .plantUML && family != .sequence && family != .activity {
+                    ForEach(DiagramFamily.allCases.filter { $0 != family && $0 != .sequence && $0 != .activity }, id: \.self) { other in
                         Menu(other.displayName) {
                             ForEach(NodeKind.palette(for: other, language: lang), id: \.self) { kind in
                                 Button(kind.displayName) { tool = .node(kind) }
@@ -190,7 +190,12 @@ struct ContentView: View {
                 }
                 if family != .sequence {
                     Divider()
-                    Button(family == .c4 ? "Boundary" : "Group") { tool = .node(family == .c4 ? .boundary : .group) }
+                    if family == .activity && lang == .plantUML {
+                        Button("Swimlane") { tool = .node(.lane) }
+                        Button("Partition") { tool = .node(.group) }
+                    } else {
+                        Button(family == .c4 ? "Boundary" : "Group") { tool = .node(family == .c4 ? .boundary : .group) }
+                    }
                 }
             } label: {
                 Label(addLabel, systemImage: "plus.square.on.square")

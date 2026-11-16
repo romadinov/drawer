@@ -130,6 +130,12 @@ extension NodeKind {
         case .system, .systemExt: "square.stack.3d.up"
         case .container, .containerExt: "macwindow"
         case .group, .boundary: "rectangle.dashed"
+        case .lane: "rectangle.split.3x1"
+        case .action: "app"
+        case .activityStart: "circle.fill"
+        case .activityStop: "smallcircle.filled.circle"
+        case .activityEnd: "xmark.circle"
+        case .forkBar: "minus"
         case .rounded: "app"
         default: "rectangle"
         }

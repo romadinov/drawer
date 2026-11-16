@@ -173,6 +173,7 @@ private struct EdgeInspector: View {
         case .classDiagram: [.none, .arrow, .triangle, .diamond, .filledDiamond]
         case .flowchart: document.state.language == .mermaid ? [.none, .filledArrow, .circle, .cross] : [.none, .arrow, .triangle, .diamond, .filledDiamond, .circle, .cross]
         case .c4: [.none, .filledArrow]
+        case .activity: document.state.language == .mermaid ? [.none, .filledArrow, .circle, .cross] : [.filledArrow]
         case .sequence: document.state.language == .mermaid ? [.none, .filledArrow, .arrow, .cross] : [.none, .filledArrow, .arrow, .cross, .circle]
         }
     }

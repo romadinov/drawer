@@ -96,7 +96,10 @@ struct MermaidParser {
             }
         }
         builder.setImplicitKind(.box)
-        return builder.finish(family: .flowchart, direction: direction, title: title, insertionOffset: insertion)
+        // A flowchart with start, stop or fork/join shapes is an activity diagram; its rounded boxes are actions.
+        let activity = builder.nodes.contains { $0.kind.isActivitySymbol }
+        if activity { for n in builder.nodes where n.kind == .rounded { builder.update(n.id) { $0.kind = .action } } }
+        return builder.finish(family: activity ? .activity : .flowchart, direction: direction, title: title, insertionOffset: insertion)
     }
 
     private static let subgraphRegex = NSRegularExpression(#"^\s*subgraph\s+(?:([\w\-]+)\s*\[\s*(?:"([^"]*)"|([^"\]]*))\s*\]|"([^"]+)"|(.+?))\s*$"#)
@@ -339,6 +342,30 @@ struct FlowScanner {
         ("[/", "\\]", .box), ("[\\", "/]", .box), (">", "]", .box), ("(", ")", .rounded), ("[", "]", .box), ("{", "}", .diamond),
     ]
 
+    private static let shapeField = NSRegularExpression(#"\bshape\s*:\s*"?([\w-]+)"?"#)
+    private static let labelField = NSRegularExpression(#"\blabel\s*:\s*(?:"([^"]*)"|([^,}]*))"#)
+
+    static func namedShape(_ name: String) -> NodeKind {
+        switch name {
+        case "sm-circ", "small-circle", "start": .activityStart
+        case "fr-circ", "framed-circle", "stop": .activityStop
+        case "cross-circ", "crossed-circle": .activityEnd
+        case "fork", "join": .forkBar
+        case "diam", "diamond", "decision", "question": .diamond
+        case "rounded", "event": .rounded
+        case "stadium", "pill", "terminal": .stadium
+        case "circle", "circ": .circle
+        case "dbl-circ", "double-circle": .circle
+        case "hex", "hexagon", "prepare": .hexagon
+        case "lean-r", "lean-right", "in-out", "lean-l", "lean-left", "out-in": .parallelogram
+        case "cyl", "cylinder", "database", "db", "h-cyl", "das", "horizontal-cylinder", "disk", "lin-cyl": name.contains("h-cyl") || name == "das" || name == "horizontal-cylinder" ? .queue : .database
+        case "doc", "document", "docs", "documents", "st-doc", "stacked-document": .artifact
+        case "cloud": .cloud
+        case "comment", "brace", "brace-l", "brace-r", "braces": .note
+        default: .box
+        }
+    }
+
     private mutating func skipSpaces() {
         while pos < ns.length, [32, 9].contains(ns.character(at: pos)) { pos += 1 }
     }
@@ -384,6 +411,28 @@ struct FlowScanner {
             ref.labelRange = labelRange
             pos = i + (shape.close as NSString).length
             break
+        }
+        // Named shapes (Mermaid 11.3+): A@{ shape: fork, label: "Join" }
+        if ref.kind == nil, hasPrefix("@{", at: pos) {
+            var i = pos + 2
+            var inQuotes = false
+            while i < ns.length, inQuotes || ns.character(at: i) != 125 { // }
+                if ns.character(at: i) == 34 { inQuotes.toggle() }
+                i += 1
+            }
+            if i < ns.length {
+                let body = NSRange(location: pos + 2, length: i - pos - 2)
+                let text = ns.substring(with: body) as NSString
+                if let m = Self.shapeField.firstMatch(in: text) { ref.kind = Self.namedShape(text.substring(with: m.range(at: 1)).lowercased()) }
+                else { ref.kind = .box }
+                if let m = Self.labelField.firstMatch(in: text) {
+                    let g = m.range(at: 1).location != NSNotFound ? 1 : 2
+                    let r = m.range(at: g)
+                    ref.label = text.substring(with: r)
+                    ref.labelRange = NSRange(location: body.location + r.location, length: r.length)
+                }
+                pos = i + 1
+            }
         }
         // ":::className" suffix
         if hasPrefix(":::", at: pos) {

@@ -10,6 +10,18 @@ struct SpecEmitter {
         return s.range(of: pattern, options: .regularExpression) != nil
     }
 
+    /// An identifier made from a title: "Check stock" → `CheckStock`.
+    static func baseID(_ title: String) -> String {
+        var base = title.components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+            .enumerated()
+            .map { $0.offset == 0 ? $0.element : $0.element.prefix(1).uppercased() + $0.element.dropFirst() }
+            .joined()
+        if base.isEmpty { base = "node" }
+        if let f = base.first, f.isNumber { base = "n" + base }
+        return base
+    }
+
     var allowsHyphenInIDs: Bool { language == .mermaid && family == .erDiagram }
 
     /// Text safe to put between double quotes.
@@ -53,7 +65,7 @@ struct SpecEmitter {
     }
 
     func groupClosing(indent: String) -> String {
-        if language == .mermaid && family == .flowchart { return indent + "end" }
+        if language == .mermaid && (family == .flowchart || family == .activity) { return indent + "end" }
         return indent + "}"
     }
 
@@ -112,14 +124,26 @@ struct SpecEmitter {
             if node.fields.isEmpty { return indent + head }
             return ([indent + head + " {"] + node.fields.map { indent + "  " + $0 } + [indent + "}"]).joined(separator: "\n")
         default:
+            if let shape = Self.mermaidShapeName(node.kind) { return indent + "\(node.id)@{ shape: \(shape) }" }
             let (open, close) = mermaidShape(node.kind)
             return indent + "\(node.id)\(open)\"\(quoted(node.title))\"\(close)"
         }
     }
 
+    /// Activity symbols use Mermaid's named shapes (v11.3+): `start@{ shape: sm-circ }`.
+    static func mermaidShapeName(_ kind: NodeKind) -> String? {
+        switch kind {
+        case .activityStart: "sm-circ"
+        case .activityStop: "fr-circ"
+        case .activityEnd: "cross-circ"
+        case .forkBar: "fork"
+        default: nil
+        }
+    }
+
     func mermaidShape(_ kind: NodeKind) -> (String, String) {
         switch kind {
-        case .rounded: ("(", ")")
+        case .rounded, .action: ("(", ")")
         case .stadium: ("([", "])")
         case .circle: ("((", "))")
         case .diamond: ("{", "}")
@@ -249,7 +273,7 @@ struct SpecEmitter {
             let macro = e.startMarker == .none ? "Rel" : "BiRel"
             return indent + "\(macro)(\(args.joined(separator: ", ")))"
         }
-        if language == .mermaid && family == .flowchart {
+        if language == .mermaid && (family == .flowchart || family == .activity) {
             let start = e.startMarker == .none ? "" : (e.startMarker == .cross ? "x" : e.startMarker == .circle ? "o" : "<")
             let endMark: String = switch e.endMarker {
             case .none: ""
@@ -325,7 +349,7 @@ struct SpecEmitter {
         case .classDiagram: DiagramEdge(from: from, to: to, startMarker: .none, endMarker: .arrow)
         case .erDiagram: DiagramEdge(from: from, to: to, startMarker: .exactlyOne, endMarker: .zeroOrMany)
         case .c4: DiagramEdge(from: from, to: to, startMarker: .none, endMarker: .filledArrow)
-        case .sequence: DiagramEdge(from: from, to: to, startMarker: .none, endMarker: .filledArrow)
+        case .sequence, .activity: DiagramEdge(from: from, to: to, startMarker: .none, endMarker: .filledArrow)
         }
     }
 }

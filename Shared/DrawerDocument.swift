@@ -156,6 +156,7 @@ final class DrawerDocument: Document {
         }
         var new = state
         new.spec = text
+        Engine.followTextEdit(&new, from: parsed)
         let p = Engine.reconcile(&new, measure: appMeasurer)
         commit(new, parsed: p)
         typingTimer?.invalidate()
@@ -177,9 +178,12 @@ final class DrawerDocument: Document {
     func addNode(kind: NodeKind, at point: Point, parent: String?) {
         var newID = ""
         change("Add \(kind.displayName)") { state, _ in
-            newID = Engine.addNode(&state, kind: kind, title: kind.isGroup ? "Group" : "New \(kind.displayName)", at: point, parent: parent, measure: appMeasurer)
+            let title = kind == .lane ? "Lane" : kind.isGroup ? "Group" : kind.isActivitySymbol ? kind.displayName : "New \(kind.displayName)"
+            newID = Engine.addNode(&state, kind: kind, title: title, at: point, parent: parent, measure: appMeasurer)
         }
         if !newID.isEmpty {
+            // Start, stop and bars have nothing to name.
+            if kind.isActivitySymbol { selection = [.node(newID)]; selectionOrigin = .canvas; return }
             selection = [.node(newID)]
             selectionOrigin = .canvas
             pendingInlineEdit = .node(newID)

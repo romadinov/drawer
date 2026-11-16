@@ -78,7 +78,13 @@ import Testing
             let converted = SpecGenerator.generate(p, language: other)
             let q = SpecParser.parse(converted, language: other)
             #expect(q.diagnostics.isEmpty, "\(t.name) → \(other): \(q.diagnostics)\n\(converted)")
-            #expect(Set(q.nodes.map(\.id)) == Set(p.nodes.map(\.id)), "\(t.name)\n\(converted)")
+            if p.family == .activity && other == .plantUML {
+                // PlantUML activities have no ids; Engine.convert moves the layout to the ones read back.
+                let kinds: [String] = q.nodes.map(\.kind.rawValue).sorted(), expected: [String] = p.nodes.map(\.kind.rawValue).sorted()
+                #expect(kinds == expected, "\(t.name)\n\(converted)")
+            } else {
+                #expect(Set(q.nodes.map(\.id)) == Set(p.nodes.map(\.id)), "\(t.name)\n\(converted)")
+            }
             #expect(q.edges.count == p.edges.count, "\(t.name)\n\(converted)")
         }
     }

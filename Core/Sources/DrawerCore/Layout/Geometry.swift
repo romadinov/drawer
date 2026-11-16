@@ -99,6 +99,12 @@ public struct DiagramGeometry: Sendable {
                 frames[group.id] = Rect(x: p.x, y: p.y, width: s.width, height: s.height)
             }
         }
+        // Swimlanes are columns: all as tall as the tallest.
+        let lanes = parsed.nodes.filter { $0.kind == .lane }.map(\.id).filter { frames[$0] != nil }
+        if lanes.count > 1 {
+            let top = lanes.compactMap { frames[$0]?.minY }.min()!, bottom = lanes.compactMap { frames[$0]?.maxY }.max()!
+            for id in lanes { let f = frames[id]!; frames[id] = Rect(x: f.minX, y: top, width: f.size.width, height: bottom - top) }
+        }
         self.frames = frames
     }
 
@@ -144,6 +150,12 @@ public struct DiagramGeometry: Sendable {
             return round(Size(width: max(w + 2 * pad, 120), height: max(h, 50)))
         case .actor, .seqBoundary, .seqControl, .seqEntity:
             return round(Size(width: max(title.width + 8, 50), height: 62 + title.height))
+        case .activityStart:
+            return Size(width: 26, height: 26)
+        case .activityStop, .activityEnd:
+            return Size(width: 30, height: 30)
+        case .forkBar:
+            return Size(width: 140, height: 8)
         case .circle:
             let d = max(title.width + 2 * pad, 56)
             return round(Size(width: d, height: d))
@@ -259,7 +271,7 @@ public struct DiagramGeometry: Sendable {
         if dx == 0 && dy == 0 { return c }
         let hw = r.size.width / 2, hh = r.size.height / 2
         switch kind {
-        case .circle, .usecase:
+        case .circle, .usecase, .activityStart, .activityStop, .activityEnd:
             let t = 1 / sqrt((dx * dx) / (hw * hw) + (dy * dy) / (hh * hh))
             return Point(x: c.x + dx * t, y: c.y + dy * t)
         case .diamond:

@@ -43,6 +43,13 @@ public enum InkCommit {
         case (.sequence, .rectangle?): return mermaid ? [.participant, .actor] : [.participant, .database, .queue, .collections, .seqBoundary, .seqControl]
         case (.sequence, .ellipse?): return mermaid ? [.actor, .participant] : [.actor, .seqEntity, .seqControl, .seqBoundary]
         case (.sequence, nil): return mermaid ? [.actor, .participant] : [.actor, .participant]
+        case (.activity, .rectangle?):
+            let thin = min(rect.size.width, rect.size.height) < 28 && max(rect.size.width, rect.size.height) > 3 * min(rect.size.width, rect.size.height)
+            return thin ? [.forkBar, .action] : [.action, .forkBar]
+        case (.activity, .ellipse?):
+            return max(rect.size.width, rect.size.height) < 60 ? [.activityStart, .activityStop, .activityEnd] : [.activityStop, .activityEnd, .activityStart]
+        case (.activity, .diamond?): return [.diamond]
+        case (.activity, nil): return []
         case (_, nil): return mermaid ? [] : [.actor]
         default: return []
         }
@@ -72,6 +79,25 @@ public enum InkCommit {
             case let .connector(a, b, hs, he): connectors.append((a, b, hs, he))
             case let .text(t, r, s): texts.append((t, r, s))
             }
+        }
+
+        // Activity diagrams: a circle drawn inside another is the stop bullseye.
+        var bullseyes: [Rect] = []
+        if parsed.family == .activity {
+            let circles = shapes.indices.filter { shapes[$0].kind == .ellipse }
+            var inner: Set<Int> = []
+            for o in circles {
+                for i in circles where i != o && !inner.contains(o) {
+                    let a = shapes[o].rect, b = shapes[i].rect
+                    if a.insetBy(-4).contains(b.center) && area(b) < 0.6 * area(a) && max(b.size.width, b.size.height) < a.size.width + 8 {
+                        inner.insert(i)
+                    }
+                }
+            }
+            for o in circles where !inner.contains(o) && circles.contains(where: { inner.contains($0) && shapes[o].rect.insetBy(-4).contains(shapes[$0].rect.center) }) {
+                bullseyes.append(shapes[o].rect)
+            }
+            for i in inner.sorted(by: >) { shapes.remove(at: i) }
         }
 
         // Handwriting inside a new shape names it (unless it was written on an element inside that shape).
@@ -107,7 +133,7 @@ public enum InkCommit {
                                         at: shape.rect.center, parent: parent, measure: measure)
                 var editor = SpecEditor(spec: state.spec, language: state.language)
                 editor.move(nodes: enclosed, into: id)
-                state.spec = editor.spec
+                Engine.adopt(editor, into: &state)
                 state.layout[id] = NodeLayout(position: Point(x: shape.rect.minX.rounded(), y: shape.rect.minY.rounded()),
                                               size: Size(width: shape.rect.size.width.rounded(), height: shape.rect.size.height.rounded()))
                 result.created.append(.node(id))
@@ -115,7 +141,8 @@ public enum InkCommit {
                 if title.isEmpty { result.untitled.append(id) }
                 continue
             }
-            let options = choices(for: shape.kind, rect: shape.rect, family: parsed.family, language: state.language)
+            var options = choices(for: shape.kind, rect: shape.rect, family: parsed.family, language: state.language)
+            if bullseyes.contains(shape.rect) { options = [.activityStop, .activityEnd, .activityStart] }
             guard let kind = options.first else {
                 let origin = shape.rect.origin
                 let d = shape.kind == nil
@@ -138,9 +165,11 @@ public enum InkCommit {
                 parent = host.id
             }
             let fallbackTitle = shape.kind == nil ? "Person" : kind.displayName
-            let id = Engine.addNode(&state, kind: kind, title: title.isEmpty ? fallbackTitle : title,
+            // Start, stop and bars have no name: a scribble filling the dot isn't one.
+            let symbol = kind.isActivitySymbol
+            let id = Engine.addNode(&state, kind: kind, title: title.isEmpty || symbol ? fallbackTitle : title,
                                     at: shape.rect.center, parent: parent, measure: measure)
-            if [.box, .stadium, .circle, .diamond, .usecase, .container, .participant].contains(kind),
+            if [.box, .stadium, .circle, .diamond, .usecase, .container, .participant, .action, .forkBar].contains(kind),
                let node = SpecParser.parse(state.spec, language: state.language).node(id) {
                 let intrinsic = DiagramGeometry.intrinsicSize(node, measure: measure)
                 let w = max(intrinsic.width, (shape.rect.size.width / 10).rounded() * 10)
@@ -150,8 +179,12 @@ public enum InkCommit {
             }
             result.created.append(.node(id))
             drawn.append((id, shape.rect))
-            if options.count > 1 { result.choices.append(Choice(id: id, options: options, needsName: title.isEmpty)) }
-            if title.isEmpty { result.untitled.append(id) }
+            if options.count > 1 { result.choices.append(Choice(id: id, options: options, needsName: title.isEmpty && !symbol)) }
+            if title.isEmpty && !symbol { result.untitled.append(id) }
+            if symbol {
+                // Unreadable strokes inside the symbol were filling it in.
+                texts.removeAll { $0.text == nil && shape.rect.insetBy(-6).contains($0.rect.center) }
+            }
         }
         parsed = Engine.reconcile(&state, measure: measure)
 
@@ -180,7 +213,7 @@ public enum InkCommit {
             var editor = SpecEditor(spec: state.spec, language: state.language)
             var edge = editor.emitter.defaultEdge(from: from, to: to)
             edge.label = label ?? (parsed.family == .sequence ? "message" : nil)
-            if parsed.family != .sequence && parsed.family != .c4 {
+            if parsed.family != .sequence && parsed.family != .c4 && parsed.family != .activity {
                 if !c.headStart && !c.headEnd { edge.endMarker = .none }
                 if c.headStart && c.headEnd { edge.startMarker = edge.endMarker }
             }
@@ -193,7 +226,7 @@ public enum InkCommit {
             }
             let existing = Set(parsed.edges.map(\.id))
             editor.addEdge(edge, before: before)
-            state.spec = editor.spec
+            Engine.adopt(editor, into: &state)
             parsed = Engine.reconcile(&state, measure: measure)
             geometry = DiagramGeometry(parsed: parsed, state: state, measure: measure)
             if let added = parsed.edges.first(where: { !existing.contains($0.id) }) { result.created.append(.edge(added.id)) }

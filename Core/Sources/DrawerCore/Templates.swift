@@ -206,6 +206,51 @@ public struct DiagramTemplate: Identifiable, Sendable {
           svc --> done([Respond])
           reject --> done
         """),
+        DiagramTemplate(name: "Order Activity", summary: "PlantUML activity with swimlanes", symbol: "arrow.triangle.pull",
+                        language: .plantUML, spec: """
+        @startuml
+        |Customer|
+        start
+        :Place order;
+        |Shop|
+        :Check stock;
+        if (In stock?) then (yes)
+          fork
+            :Pack items;
+          fork again
+            :Send invoice;
+          end fork
+          :Ship;
+        else (no)
+          :Refund payment;
+          end
+        endif
+        |Customer|
+        :Receive parcel;
+        stop
+        @enduml
+        """),
+        DiagramTemplate(name: "Activity", summary: "Mermaid flowchart with activity shapes", symbol: "arrow.triangle.pull",
+                        language: .mermaid, spec: """
+        flowchart TD
+          Start@{ shape: sm-circ }
+          Order("Place order")
+          InStock{"In stock?"}
+          Fork@{ shape: fork }
+          Pack("Pack items")
+          Invoice("Send invoice")
+          Join@{ shape: fork }
+          Ship("Ship")
+          Refund("Refund payment")
+          Stop@{ shape: fr-circ }
+          Start --> Order --> InStock
+          InStock -->|yes| Fork
+          InStock -->|no| Refund
+          Fork --> Pack --> Join
+          Fork --> Invoice --> Join
+          Join --> Ship --> Stop
+          Refund --> Stop
+        """),
         DiagramTemplate(name: "Components", summary: "PlantUML component / deployment", symbol: "shippingbox",
                         language: .plantUML, spec: """
         @startuml
@@ -235,7 +280,7 @@ public struct DiagramTemplate: Identifiable, Sendable {
 
 /// Starting points for a new document: an empty diagram of a chosen type, or that type's example.
 public enum DiagramStarter {
-    public static let families: [DiagramFamily] = [.c4, .classDiagram, .erDiagram, .sequence, .flowchart]
+    public static let families: [DiagramFamily] = [.c4, .classDiagram, .erDiagram, .sequence, .activity, .flowchart]
 
     public static func summary(_ family: DiagramFamily) -> String {
         switch family {
@@ -243,6 +288,7 @@ public enum DiagramStarter {
         case .classDiagram: "Classes, interfaces and their relationships"
         case .erDiagram: "Entities, attributes and cardinality"
         case .sequence: "Participants exchanging messages over time"
+        case .activity: "Steps, decisions, parallel work and swimlanes"
         case .flowchart: "Boxes and arrows, components and deployment"
         }
     }
@@ -253,6 +299,7 @@ public enum DiagramStarter {
         case .classDiagram: "rectangle.split.3x1"
         case .erDiagram: "tablecells"
         case .sequence: "arrow.left.arrow.right"
+        case .activity: "arrow.triangle.pull"
         case .flowchart: "arrow.triangle.branch"
         }
     }
@@ -266,6 +313,8 @@ public enum DiagramStarter {
         case (.plantUML, .erDiagram): "@startuml\nhide circle\n\n@enduml\n"
         case (.plantUML, .sequence): "@startuml\nhide footbox\n\n@enduml\n"
         case (.plantUML, .flowchart): "@startuml\n\n@enduml\n"
+        case (.plantUML, .activity): "@startuml\nstart\n@enduml\n"
+        case (.mermaid, .activity): "flowchart TD\n  Start@{ shape: sm-circ }\n"
         case (.mermaid, .c4): "C4Container\n"
         case (.mermaid, .classDiagram): "classDiagram\n"
         case (.mermaid, .erDiagram): "erDiagram\n"

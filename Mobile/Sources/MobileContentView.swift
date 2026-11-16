@@ -140,6 +140,7 @@ struct MobileContentView: View {
     private var addPalette: some View {
         let family = document.parsed.family
         var kinds = NodeKind.palette(for: family, language: document.state.language)
+        if family == .activity && document.state.language == .plantUML { kinds.append(.lane) }
         if family != .sequence { kinds.append(family == .c4 ? .boundary : .group) }
         return ScrollView {
             VStack(alignment: .leading, spacing: 12) {

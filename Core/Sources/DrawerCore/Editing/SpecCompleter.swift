@@ -57,6 +57,7 @@ public enum SpecCompleter {
         case (.sequence, .mermaid): ["->>", "-->>", "-)", "--)", "-x", "--x", "->", "-->"]
         case (.erDiagram, _): ["||--o{", "||--|{", "||--||", "|o--o{", "}o--o{", "}|--|{"]
         case (.classDiagram, _): ["<|--", "*--", "o--", "-->", "..>", "..|>", "--", ".."]
+        case (.activity, .plantUML): ["->", "-[dashed]->", "-[bold]->"]
         case (_, .mermaid): ["-->", "---", "-.->", "==>", "--o", "--x"]
         default: ["-->", "->", "..>", "--", "<|--", "*--", "o--"]
         }
@@ -86,6 +87,14 @@ public enum SpecCompleter {
         case (.plantUML, .flowchart):
             return ["component", "rectangle", "database", "queue", "actor", "usecase", "node", "cloud", "folder", "artifact", "package",
                     "frame", "note", "left to right direction", "title", "@startuml", "@enduml"]
+        case (.plantUML, .activity):
+            return ["start", "stop", "end", "if () then ()", "elseif () then ()", "else ()", "endif", "while () is ()", "endwhile ()",
+                    "repeat", "repeat while () is () not ()", "backward", "switch ()", "case ()", "endswitch", "fork", "fork again",
+                    "end fork", "end merge", "split", "split again", "end split", "detach", "kill", "break", "partition", "note right",
+                    "note left", "end note", "title", "@startuml", "@enduml"]
+        case (.mermaid, .activity):
+            return ["@{ shape: sm-circ }", "@{ shape: fr-circ }", "@{ shape: cross-circ }", "@{ shape: fork }", "subgraph", "end",
+                    "flowchart TD", "classDef", "style"]
         case (.mermaid, .flowchart):
             return ["flowchart TD", "flowchart LR", "subgraph", "end", "classDef", "class", "style", "linkStyle", "direction", "click"]
         }
